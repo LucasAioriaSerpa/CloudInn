@@ -1,11 +1,11 @@
 ---
 date: Setembro de 2024
-title: Modelo ![arc42](images/arc42-logo.png)
+title: Modelo arc42
 ---
 
-# 
+![arc42](images/arc42-logo.png)
 
-**Sobre o arc42**
+## **Sobre o arc42**
 
 arc42, o template para documentação de software e arquitetura de
 sistemas.
@@ -22,25 +22,25 @@ colaboradores. Veja <https://arc42.org>.
 
 Esta versão do modelo contém algumas ajudas e explicações. É usada para
 familiarização com arc42 e compreensão dos conceitos. Para a
-documentação do seu próprio sistema, é melhor usar a versão *plain*.
+documentação do seu próprio sistema, é melhor usar a versão _plain_.
 ::::
 
-# Introdução e Objetivos {#section-introduction-and-goals}
+## Introdução e Objetivos {#section-introduction-and-goals}
 
 Descreve os requisitos relevantes e as forças motrizes que os arquitetos
 de software e a equipe de desenvolvimento devem considerar. Isso inclui
 
--   objetivos de negócios subjacentes,
+- objetivos de negócios subjacentes,
 
--   recursos essenciais,
+- recursos essenciais,
 
--   requisitos funcionais essenciais,
+- requisitos funcionais essenciais,
 
--   objetivos de qualidade para a arquitetura e
+- objetivos de qualidade para a arquitetura e
 
--   partes interessadas relevantes e suas expectativas
+- partes interessadas relevantes e suas expectativas
 
-## Visão Geral dos Requisitos {#_visão_geral_dos_requisitos}
+## Visão Geral dos Requisitos {#\_visão_geral_dos_requisitos}
 
 ::: formalpara-title
 **Conteúdo**
@@ -78,7 +78,7 @@ requisitos.
 Consulte [Introduction and Goals](https://docs.arc42.org/section-1/) na
 documentação do arc42.
 
-## Objetivos de Qualidade {#_objetivos_de_qualidade}
+## Objetivos de Qualidade {#\_objetivos_de_qualidade}
 
 ::: formalpara-title
 **Conteúdo**
@@ -93,8 +93,7 @@ são necessariamente idênticos.
 Considere esta visão geral de tópicos potenciais (com base no padrão ISO
 25010):
 
-![Categorias de Requisitos de
-Qualidade](images/01_2_iso-25010-topics-EN-2023.drawio.png)
+![Categorias de Requisitos de Qualidade](images/01_2_iso-25010-topics-EN-2023.drawio.png)
 
 ::: formalpara-title
 **Motivação**
@@ -113,7 +112,7 @@ qualidade do seu trabalho será julgada...​
 Uma tabela com objetivos de qualidade e cenários concretos, ordenados
 por prioridades
 
-## Partes Interessadas {#_partes_interessadas}
+## Partes Interessadas {#\_partes_interessadas}
 
 ::: formalpara-title
 **Conteúdo**
@@ -122,15 +121,15 @@ por prioridades
 Visão geral explícita das partes interessadas do sistema, ou seja, todas
 as pessoas, funções ou organizações que
 
--   devem conhecer a arquitetura
+- devem conhecer a arquitetura
 
--   precisam ser convencidas da arquitetura
+- precisam ser convencidas da arquitetura
 
--   precisam trabalhar com a arquitetura ou com código
+- precisam trabalhar com a arquitetura ou com código
 
--   precisam da documentação da arquitetura para seu trabalho
+- precisam da documentação da arquitetura para seu trabalho
 
--   precisam tomar decisões sobre o sistema ou seu desenvolvimento
+- precisam tomar decisões sobre o sistema ou seu desenvolvimento
 
 ::: formalpara-title
 **Motivação**
@@ -149,17 +148,12 @@ trabalho e seus resultados.
 Tabela com nomes de funções, nomes de pessoas e suas expectativas com
 relação à arquitetura e sua documentação.
 
-+-------------+---------------------------+---------------------------+
-| Função/Nome | Contato                   | Expectativas              |
-+=============+===========================+===========================+
-| *\<         | *\<Contato-1\>*           | *\<Expectativa-1\>*       |
-| Função-1\>* |                           |                           |
-+-------------+---------------------------+---------------------------+
-| *\<         | *\<Contato-2\>*           | *\<Expectativa-2\>*       |
-| Função-2\>* |                           |                           |
-+-------------+---------------------------+---------------------------+
+| Função/Nome      |     Contato     |        Expectativas |
+| :--------------- | :-------------: | ------------------: |
+| \_\<Função-1\>\_ | _\<Contato-1\>_ | _\<Expectativa-1\>_ |
+| \_\<Função-2\>\_ | _\<Contato-2\>_ | _\<Expectativa-2\>_ |
 
-# Restrições Arquiteturais {#section-architecture-constraints}
+## Restrições Arquiteturais {#section-architecture-constraints}
 
 ::: formalpara-title
 **Conteúdo**
@@ -194,7 +188,7 @@ controle de versão, convenções de documentação ou nomenclatura)
 Consulte [Architecture Constraints](https://docs.arc42.org/section-2/)
 na documentação do arc42.
 
-# Contexto e Escopo {#section-context-and-scope}
+## Contexto e Escopo {#section-context-and-scope}
 
 ::: formalpara-title
 **Conteúdo**
@@ -223,9 +217,9 @@ Certifique-se de entendê-las completamente.
 
 Várias opções:
 
--   Diagramas de contexto
+- Diagramas de contexto
 
--   Listas de componentes externos e suas interfaces.
+- Listas de componentes externos e suas interfaces.
 
 ::: formalpara-title
 **Mais informações**
@@ -234,7 +228,7 @@ Várias opções:
 Consulte [Context and Scope](https://docs.arc42.org/section-3/) na
 documentação do arc42.
 
-## Contexto Negocial {#_contexto_negocial}
+### Contexto Negocial {#\_contexto_negocial}
 
 ::: formalpara-title
 **Conteúdo**
@@ -267,7 +261,7 @@ do componente externo, as entradas e as saídas.
 
 **\<opcionalmente: Explicação das interfaces de domínio externo\>**
 
-## Contexto Técnico {#_contexto_técnico}
+## Contexto Técnico {#\_contexto_técnico}
 
 ::: formalpara-title
 **Conteúdo**
@@ -301,7 +295,7 @@ relacionamentos entre canais e entrada/saída.
 
 **\<Mapeamento de entrada/saída para canais\>**
 
-# Estratégia de Solução {#section-solution-strategy}
+## Estratégia de Solução {#section-solution-strategy}
 
 ::: formalpara-title
 **Conteúdo**
@@ -310,15 +304,15 @@ relacionamentos entre canais e entrada/saída.
 Um breve resumo e explicação das decisões fundamentais e estratégias de
 solução que moldam a arquitetura do sistema. Inclui
 
--   decisões de tecnologia
+- decisões de tecnologia
 
--   decisões sobre a decomposição de nível superior do sistema, por
-    exemplo, uso de um padrão arquitetural ou *design pattern*
+- decisões sobre a decomposição de nível superior do sistema, por
+  exemplo, uso de um padrão arquitetural ou _design pattern_
 
--   decisões sobre como atingir as principais metas de qualidade
+- decisões sobre como atingir as principais metas de qualidade
 
--   decisões organizacionais relevantes, por exemplo, selecionar um
-    processo de desenvolvimento ou delegar certas tarefas a terceiros.
+- decisões organizacionais relevantes, por exemplo, selecionar um
+  processo de desenvolvimento ou delegar certas tarefas a terceiros.
 
 ::: formalpara-title
 **Motivação**
@@ -344,7 +338,7 @@ Consulte os detalhes nas seções a seguir.
 Consulte [Solution Strategy](https://docs.arc42.org/section-4/) na
 documentação do arc42.
 
-# Visão de Blocos de Construção {#section-building-block-view}
+## Visão de Blocos de Construção {#section-building-block-view}
 
 ::: formalpara-title
 **Conteúdo**
@@ -357,7 +351,7 @@ níveis, funções, macros, operações, estruturas de dados, ...​) bem como
 suas dependências (relacionamentos, associações, ...​)
 
 Esta visão é obrigatória para toda documentação de arquitetura. Em
-analogia a uma casa, esta é a *planta baixa*.
+analogia a uma casa, esta é a _planta baixa_.
 
 ::: formalpara-title
 **Motivação**
@@ -396,117 +390,113 @@ assim por diante.
 Consulte [Building Block View](https://docs.arc42.org/section-5/) na
 documentação do arc42.
 
-## Visão Sistêmica Geral de Caixa Branca {#_visão_sistêmica_geral_de_caixa_branca}
+### Visão Sistêmica Geral de Caixa Branca {#\_visão_sistêmica_geral_de_caixa_branca}
 
 Aqui você descreve a decomposição geral do sistema usando o seguinte
 modelo de caixa branca. Ele contém
 
--   um diagrama de visão geral
+- um diagrama de visão geral
 
--   uma motivação para a decomposição
+- uma motivação para a decomposição
 
--   descrições de caixa preta dos blocos de construção contidos. Para
-    isso, oferecemos alternativas:
+- descrições de caixa preta dos blocos de construção contidos. Para
+  isso, oferecemos alternativas:
+  - use _uma_ tabela para uma visão geral curta e pragmática de
+    todos os blocos de construção contidos e suas interfaces
 
-    -   use *uma* tabela para uma visão geral curta e pragmática de
-        todos os blocos de construção contidos e suas interfaces
+  - use uma lista de descrições de caixa preta dos blocos de
+    construção de acordo com o modelo de caixa preta (veja abaixo).
+    Dependendo da sua escolha de ferramenta, esta lista pode ser
+    subcapítulos (em arquivos de texto), subpáginas (em uma Wiki) ou
+    elementos aninhados (em uma ferramenta de modelagem).
 
-    -   use uma lista de descrições de caixa preta dos blocos de
-        construção de acordo com o modelo de caixa preta (veja abaixo).
-        Dependendo da sua escolha de ferramenta, esta lista pode ser
-        subcapítulos (em arquivos de texto), subpáginas (em uma Wiki) ou
-        elementos aninhados (em uma ferramenta de modelagem).
+- (opcional:) interfaces importantes, que não são explicadas nos
+  modelos de caixa preta de um bloco de construção, mas são muito
+  importantes para entender a caixa branca. Já que há tantas maneiras
+  de especificar interfaces, por que não fornecer um modelo específico
+  para elas? No pior caso, você tem que especificar e descrever
+  sintaxe, semântica, protocolos, tratamento de erros, restrições,
+  versões, qualidades, compatibilidades necessárias e muito mais. Na
+  melhor das hipóteses, você conseguirá usar exemplos ou descrições
+  simples.
 
--   (opcional:) interfaces importantes, que não são explicadas nos
-    modelos de caixa preta de um bloco de construção, mas são muito
-    importantes para entender a caixa branca. Já que há tantas maneiras
-    de especificar interfaces, por que não fornecer um modelo específico
-    para elas? No pior caso, você tem que especificar e descrever
-    sintaxe, semântica, protocolos, tratamento de erros, restrições,
-    versões, qualidades, compatibilidades necessárias e muito mais. Na
-    melhor das hipóteses, você conseguirá usar exemplos ou descrições
-    simples.
-
-***\<Diagrama de Visão Geral\>***
+**_\<Diagrama de Visão Geral\>_**
 
 Motivação
 
-:   *\<explicação textual\>*
+: _\<explicação textual\>_
 
 Blocos de Construção Contidos
 
-:   *\<Descrição dos blocos de construção contidos (caixas pretas)\>*
+: _\<Descrição dos blocos de construção contidos (caixas pretas)\>_
 
 Interfaces Importantes
 
-:   *\<Descrição de interfaces importantes\>*
+: _\<Descrição de interfaces importantes\>_
 
 Insira suas explicações de caixas pretas do nível 1:
 
 Se você usar a forma tabular, você descreverá apenas suas caixas pretas
 com nome e responsabilidade de acordo com o seguinte esquema:
 
-+----------------------+-----------------------------------------------+
-| **Nome**             | **Responsabilidade**                          |
-+======================+===============================================+
-| *\<caixa preta 1\>*  | *\<Texto\>*                                   |
-+----------------------+-----------------------------------------------+
-| *\<caixa preta 2\>*  | *\<Texto\>*                                   |
-+----------------------+-----------------------------------------------+
+| **Nome**            | **Responsabilidade** |
+| :------------------ | -------------------: |
+| _\<caixa preta 1\>_ |          _\<Texto\>_ |
+| _\<caixa preta 2\>_ |          _\<Texto\>_ |
 
 Se você usar uma lista de descrições de caixa preta, então você preenche
 um modelo de caixa preta separado para cada bloco de construção
 importante. Seu título é o nome da caixa preta.
 
-### \<Nome Caixa Preta 1\> {#_nome_caixa_preta_1}
+#### \<Nome Caixa Preta 1\> {#\_nome_caixa_preta_1}
 
 Aqui você descreve \<caixa preta 1\> de acordo com o seguinte modelo de
 caixa preta:
 
--   Propósito/Responsabilidade
+- Propósito/Responsabilidade
 
--   Interface(s), quando não são extraídas como parágrafos separados.
-    Essas interfaces podem incluir qualidades e características de
-    desempenho.
+- Interface(s), quando não são extraídas como parágrafos separados.
+  Essas interfaces podem incluir qualidades e características de
+  desempenho.
 
--   (Opcional) Características de qualidade/desempenho da caixa preta,
-    por exemplo, disponibilidade, comportamento de tempo de execução,
-    ...​.
+- (Opcional) Características de qualidade/desempenho da caixa preta,
+  por exemplo, disponibilidade, comportamento de tempo de execução,
+  ...​.
 
--   (Opcional) Local do diretório/arquivo
+- (Opcional) Local do diretório/arquivo
 
--   (Opcional) Requisitos atendidos (se você precisar de rastreabilidade
-    para requisitos).
+- (Opcional) Requisitos atendidos (se você precisar de rastreabilidade
+  para requisitos).
 
--   (Opcional) Problemas/questões/riscos abertos
+- (Opcional) Problemas/questões/riscos abertos
 
-*\<Propósito/Responsabilidade\>*
+_\<Propósito/Responsabilidade\>_
 
-*\<Interface(s)\>*
+_\<Interface(s)\>_
 
-*\<(Opcional) Características de Qualidade/Desempenho\>*
+_\<(Opcional) Características de Qualidade/Desempenho\>_
 
-*\<(Opcional) Local do Diretório/Arquivo\>*
+_\<(Opcional) Local do Diretório/Arquivo\>_
 
-*\<(Opcional) Requisitos Cumpridos\>*
+_\<(Opcional) Requisitos Cumpridos\>_
 
-*\<(opcional) Problemas/Riscos Abertos\>*
+_\<(opcional) Problemas/Riscos Abertos\>_
 
-### \<Nome Caixa Preta 2\> {#_nome_caixa_preta_2}
+#### \<Nome Caixa Preta 2\> {#\_nome_caixa_preta_2}
 
-*\<modelo de caixa preta\>*
+_\<modelo de caixa preta\>_
 
-### \<Nome Caixa Preta n\> {#_nome_caixa_preta_n}
+#### \<Nome Caixa Preta n\> {#\_nome_caixa_preta_n}
 
-*\<modelo de caixa preta\>*
+_\<modelo de caixa preta\>_
 
-### \<Nome Interface 1\> {#_nome_interface_1}
+#### \<Nome Interface 1\> {#\_nome_interface_1}
 
 ...​
 
-### \<Nome Interface m\> {#_nome_interface_m}
+#### \<Nome Interface m\> {#\_nome_interface_m}
 
-## Nível 2 {#_nível_2}
+### Nível 2 {#\_nível_2}
 
 Aqui você pode especificar a estrutura interna de (alguns) blocos de
 construção do nível 1 como caixas brancas.
@@ -518,23 +508,23 @@ construção importantes, surpreendentes, arriscados, complexos ou
 voláteis. Deixe de fora partes normais, simples, chatas ou padronizadas
 do seu sistema
 
-### Caixa Branca *\<Bloco de Construção 1\>* {#_caixa_branca_bloco_de_construção_1}
+#### Caixa Branca _\<Bloco de Construção 1\>_ {#\_caixa_branca_bloco_de_construção_1}
 
-...​descreve a estrutura interna do *bloco de construção 1*.
+...​descreve a estrutura interna do _bloco de construção 1_.
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
-### Caixa Branca *\<Bloco de Construção 2\>* {#_caixa_branca_bloco_de_construção_2}
+#### Caixa Branca _\<Bloco de Construção 2\>_ {#\_caixa_branca_bloco_de_construção_2}
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
 ...​
 
-### Caixa Branca *\<Bloco de Construção m\>* {#_caixa_branca_bloco_de_construção_m}
+#### Caixa Branca _\<Bloco de Construção m\>_ {#\_caixa_branca_bloco_de_construção_m}
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
-## Nível 3 {#_nível_3}
+### Nível 3 {#\_nível_3}
 
 Aqui você pode especificar a estrutura interna de (alguns) blocos de
 construção do nível 2 como caixas brancas.
@@ -542,21 +532,21 @@ construção do nível 2 como caixas brancas.
 Quando precisar de níveis mais detalhados de sua arquitetura, copie esta
 parte do arc42 para níveis adicionais.
 
-### Caixa Branca \<\_Bloco de Construção x.1\_\> {#_caixa_branca_bloco_de_construção_x_1}
+#### Caixa Branca \<\_Bloco de Construção x.1\_\> {#\_caixa_branca_bloco_de_construção_x_1}
 
-Especifica a estrutura interna do *bloco de construção x.1*.
+Especifica a estrutura interna do _bloco de construção x.1_.
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
-### Caixa Branca \<\_Bloco de Construção x.2\_\> {#_caixa_branca_bloco_de_construção_x_2}
+#### Caixa Branca \<\_Bloco de Construção x.2\_\> {#\_caixa_branca_bloco_de_construção_x_2}
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
-### Caixa Branca \<\_Bloco de Construção y.1\_\> {#_caixa_branca_bloco_de_construção_y_1}
+#### Caixa Branca \<\_Bloco de Construção y.1\_\> {#\_caixa_branca_bloco_de_construção_y_1}
 
-*\<modelo de caixa branca\>*
+_\<modelo de caixa branca\>_
 
-# Visão de Tempo de Execução {#section-runtime-view}
+## Visão de Tempo de Execução {#section-runtime-view}
 
 ::: formalpara-title
 **Conteúdo**
@@ -566,15 +556,15 @@ A visão de tempo de execução descreve o comportamento concreto e as
 interações dos blocos de construção do sistema na forma de cenários das
 seguintes áreas:
 
--   casos de uso ou recursos importantes: como os blocos de construção
-    os executam?
+- casos de uso ou recursos importantes: como os blocos de construção
+  os executam?
 
--   interações em interfaces externas críticas: como os blocos de
-    construção cooperam com os usuários e sistemas vizinhos?
+- interações em interfaces externas críticas: como os blocos de
+  construção cooperam com os usuários e sistemas vizinhos?
 
--   operação e administração: lançamento, inicialização, parada
+- operação e administração: lançamento, inicialização, parada
 
--   cenários de erro e exceção
+- cenários de erro e exceção
 
 Observação: O principal critério para a escolha de cenários possíveis
 (sequências, fluxos de trabalho) é sua **relevância arquitetural**.
@@ -598,17 +588,17 @@ visão de implantação).
 
 Há muitas notações para descrever cenários, por exemplo,
 
--   lista numerada de etapas (em linguagem natural)
+- lista numerada de etapas (em linguagem natural)
 
--   diagramas de atividade ou fluxogramas
+- diagramas de atividade ou fluxogramas
 
--   diagramas de sequência
+- diagramas de sequência
 
--   BPMN ou EPCs (cadeias de processos de eventos)
+- BPMN ou EPCs (cadeias de processos de eventos)
 
--   máquinas de estado
+- máquinas de estado
 
--   ...​
+- ...​
 
 ::: formalpara-title
 **Mais informações**
@@ -617,21 +607,21 @@ Há muitas notações para descrever cenários, por exemplo,
 Consulte [Runtime View](https://docs.arc42.org/section-6/) na
 documentação do arc42.
 
-## \<Cenário de Tempo de Execução 1\> {#_cenário_de_tempo_de_execução_1}
+## \<Cenário de Tempo de Execução 1\> {#\_cenário_de_tempo_de_execução_1}
 
--   *\<inserir diagrama de tempo de execução ou descrição textual do
-    cenário\>*
+- _\<inserir diagrama de tempo de execução ou descrição textual do
+  cenário\>_
 
--   *\<inserir descrição dos aspectos notáveis ​​das interações entre as
-    instâncias do bloco de construção descritas neste diagrama.\>*
+- _\<inserir descrição dos aspectos notáveis ​​das interações entre as
+  instâncias do bloco de construção descritas neste diagrama.\>_
 
-## \<Cenário de Tempo de Execução 2\> {#_cenário_de_tempo_de_execução_2}
+## \<Cenário de Tempo de Execução 2\> {#\_cenário_de_tempo_de_execução_2}
 
 ## ...​
 
-## \<Cenário de Tempo de Execução n\> {#_cenário_de_tempo_de_execução_n}
+## \<Cenário de Tempo de Execução n\> {#\_cenário_de_tempo_de_execução_n}
 
-# Visão de Implantação {#section-deployment-view}
+## Visão de Implantação {#section-deployment-view}
 
 ::: formalpara-title
 **Conteúdo**
@@ -639,13 +629,13 @@ documentação do arc42.
 
 A visão de implantação descreve:
 
-1.  infraestrutura técnica usada para executar seu sistema, com
-    elementos de infraestrutura como localizações geográficas,
-    ambientes, computadores, processadores, canais e topologias de rede,
-    bem como outros elementos de infraestrutura e
+1. infraestrutura técnica usada para executar seu sistema, com
+   elementos de infraestrutura como localizações geográficas,
+   ambientes, computadores, processadores, canais e topologias de rede,
+   bem como outros elementos de infraestrutura e
 
-2.  mapeamento de blocos de construção (de software) para esses
-    elementos de infraestrutura.
+2. mapeamento de blocos de construção (de software) para esses
+   elementos de infraestrutura.
 
 Frequentemente, os sistemas são executados em ambientes diferentes, por
 exemplo, ambiente de desenvolvimento, ambiente de teste, ambiente de
@@ -680,14 +670,14 @@ na seção 3.2. como contexto técnico com sua própria infraestrutura como
 UMA caixa preta. Nesta seção, pode-se ampliar esta caixa preta usando
 diagramas de implantação adicionais:
 
--   UML oferece diagramas de implantação para expressar essa visão.
-    Use-o, provavelmente com diagramas aninhados, quando sua
-    infraestrutura for mais complexa.
+- UML oferece diagramas de implantação para expressar essa visão.
+  Use-o, provavelmente com diagramas aninhados, quando sua
+  infraestrutura for mais complexa.
 
--   Quando suas partes interessadas (de hardware) preferirem outros
-    tipos de diagramas em vez de um diagrama de implantação, deixe-os
-    usar qualquer tipo que seja capaz de mostrar nós e canais da
-    infraestrutura.
+- Quando suas partes interessadas (de hardware) preferirem outros
+  tipos de diagramas em vez de um diagrama de implantação, deixe-os
+  usar qualquer tipo que seja capaz de mostrar nós e canais da
+  infraestrutura.
 
 ::: formalpara-title
 **Mais informações**
@@ -696,61 +686,61 @@ diagramas de implantação adicionais:
 Consulte [Deployment View](https://docs.arc42.org/section-7/) na
 documentação do arc42.
 
-## Nível de Infraestrutura 1 {#_nível_de_infraestrutura_1}
+### Nível de Infraestrutura 1 {#\_nível_de_infraestrutura_1}
 
 Descreva (geralmente em uma combinação de diagramas, tabelas e texto):
 
--   distribuição de um sistema para vários locais, ambientes,
-    computadores, processadores, .., bem como conexões físicas entre
-    eles
+- distribuição de um sistema para vários locais, ambientes,
+  computadores, processadores, .., bem como conexões físicas entre
+  eles
 
--   justificativas ou motivações importantes para esta estrutura de
-    implantação
+- justificativas ou motivações importantes para esta estrutura de
+  implantação
 
--   recursos de qualidade e/ou desempenho desta infraestrutura
+- recursos de qualidade e/ou desempenho desta infraestrutura
 
--   mapeamento de artefatos de software para elementos desta
-    infraestrutura
+- mapeamento de artefatos de software para elementos desta
+  infraestrutura
 
 Para vários ambientes ou implantações alternativas, copie e adapte esta
 seção do arc42 para todos os ambientes relevantes.
 
-***\<Diagrama de Visão Geral\>***
+**_\<Diagrama de Visão Geral\>_**
 
 Motivação
 
-:   *\<explicação em forma de texto\>*
+: _\<explicação em forma de texto\>_
 
 Características de Qualidade e/ou Desempenho
 
-:   *\<explicação em forma de texto\>*
+: _\<explicação em forma de texto\>_
 
 Mapeamento de Blocos de Construção para Infraestrutura
 
-:   *\<descrição do mapeamento\>*
+: _\<descrição do mapeamento\>_
 
-## Nível de Infraestrutura 2 {#_nível_de_infraestrutura_2}
+### Nível de Infraestrutura 2 {#\_nível_de_infraestrutura_2}
 
 Aqui você pode incluir a estrutura interna de (alguns) elementos de
 infraestrutura do nível 1.
 
 Copie a estrutura do nível 1 para cada elemento selecionado.
 
-### *\<Elemento de Infraestrutura 1\>* {#_elemento_de_infraestrutura_1}
+### _\<Elemento de Infraestrutura 1\>_ {#\_elemento_de_infraestrutura_1}
 
-*\<diagrama + explicação\>*
+_\<diagrama + explicação\>_
 
-### *\<Elemento de Infraestrutura 2\>* {#_elemento_de_infraestrutura_2}
+### _\<Elemento de Infraestrutura 2\>_ {#\_elemento_de_infraestrutura_2}
 
-*\<diagrama + explicação\>*
+_\<diagrama + explicação\>_
 
 ...​
 
-### *\<Elemento de Infraestrutura n\>* {#_elemento_de_infraestrutura_n}
+### _\<Elemento de Infraestrutura n\>_ {#\_elemento_de_infraestrutura_n}
 
-*\<diagrama + explicação\>*
+_\<diagrama + explicação\>_
 
-# Conceitos Transversais {#section-concepts}
+## Conceitos Transversais {#section-concepts}
 
 ::: formalpara-title
 **Conteúdo**
@@ -761,22 +751,22 @@ de soluções que são relevantes em várias partes (= transversais) do seu
 sistema. Esses conceitos geralmente estão relacionados a vários blocos
 de construção. Eles podem incluir muitos tópicos diferentes, como
 
--   modelos, especialmente modelos de domínio
+- modelos, especialmente modelos de domínio
 
--   padrões de arquitetura ou *design patterns*
+- padrões de arquitetura ou _design patterns_
 
--   regras para usar tecnologia específica
+- regras para usar tecnologia específica
 
--   principais decisões, geralmente técnicas, de natureza abrangente (=
-    transversais)
+- principais decisões, geralmente técnicas, de natureza abrangente (=
+  transversais)
 
--   regras de implementação
+- regras de implementação
 
 ::: formalpara-title
 **Motivação**
 :::
 
-Os conceitos formam a base para a *integridade conceitual*
+Os conceitos formam a base para a _integridade conceitual_
 (consistência, homogeneidade) da arquitetura. Portanto, eles são uma
 contribuição importante para atingir as qualidades internas do seu
 sistema.
@@ -790,15 +780,15 @@ individuais, por exemplo segurança ou proteção.
 
 A forma pode ser variada:
 
--   documentos conceituais com qualquer tipo de estrutura
+- documentos conceituais com qualquer tipo de estrutura
 
--   trechos ou cenários de modelos transversais usando notações das
-    visualizações de arquitetura
+- trechos ou cenários de modelos transversais usando notações das
+  visualizações de arquitetura
 
--   amostra de implementações, especialmente para conceitos técnicos
+- amostra de implementações, especialmente para conceitos técnicos
 
--   referência ao uso típico de *frameworks* padrão (por exemplo, usando
-    Hibernate para mapeamento de objeto/relacional)
+- referência ao uso típico de _frameworks_ padrão (por exemplo, usando
+  Hibernate para mapeamento de objeto/relacional)
 
 ::: formalpara-title
 **Estrutura**
@@ -807,19 +797,19 @@ A forma pode ser variada:
 Uma estrutura potencial (mas não obrigatória) para esta seção poderia
 ser:
 
--   Conceitos de domínio
+- Conceitos de domínio
 
--   Conceitos de Experiência do Usuário (UX)
+- Conceitos de Experiência do Usuário (UX)
 
--   Conceitos de proteção e segurança
+- Conceitos de proteção e segurança
 
--   Padrões de arquitetura e *design patterns*
+- Padrões de arquitetura e _design patterns_
 
--   Estruturas internas
+- Estruturas internas
 
--   Conceitos de desenvolvimento
+- Conceitos de desenvolvimento
 
--   Conceitos operacionais
+- Conceitos operacionais
 
 Observação: pode ser difícil atribuir conceitos individuais a um tópico
 específico nesta lista.
@@ -834,21 +824,21 @@ transversais](images/08-concepts-EN.drawio.png)
 Veja [Concepts](https://docs.arc42.org/section-8/) na documentação do
 arc42.
 
-## *\<Conceito 1\>* {#_conceito_1}
+## _\<Conceito 1\>_ {#\_conceito_1}
 
-*\<explicação\>*
+_\<explicação\>_
 
-## *\<Conceito 2\>* {#_conceito_2}
+## _\<Conceito 2\>_ {#\_conceito_2}
 
-*\<explicação\>*
+_\<explicação\>_
 
 ...​
 
-## *\<Conceito n\>* {#_conceito_n}
+## _\<Conceito n\>_ {#\_conceito_n}
 
-*\<explicação\>*
+_\<explicação\>_
 
-# Decisões Arquiteturais {#section-design-decisions}
+## Decisões Arquiteturais {#section-design-decisions}
 
 ::: formalpara-title
 **Conteúdo**
@@ -879,13 +869,13 @@ refazer suas decisões.
 
 Várias opções:
 
--   ADR (Architecture Decision Record) ([Documentando Decisões de
-    Arquitetura](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions))
-    para cada decisão importante
+- ADR (Architecture Decision Record) ([Documentando Decisões de
+  Arquitetura](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions))
+  para cada decisão importante
 
--   Lista ou tabela, ordenada por importância e consequências ou:
+- Lista ou tabela, ordenada por importância e consequências ou:
 
--   mais detalhada em forma de seções separadas por decisão
+- mais detalhada em forma de seções separadas por decisão
 
 ::: formalpara-title
 **Mais informações**
@@ -894,7 +884,7 @@ Várias opções:
 Veja [Architecture Decisions](https://docs.arc42.org/section-9/) na
 documentação do arc42. Lá você encontrará links e exemplos sobre ADR.
 
-# Requisitos de qualidade {#section-quality-scenarios}
+## Requisitos de qualidade {#section-quality-scenarios}
 
 ::: formalpara-title
 **Conteúdo**
@@ -923,7 +913,7 @@ realmente importante para eles, concreto e mensurável.
 Veja [Quality Requirements](https://docs.arc42.org/section-10/) na
 documentação do arc42.
 
-## Árvore de qualidade {#_árvore_de_qualidade}
+### Árvore de qualidade {#\_árvore_de_qualidade}
 
 ::: formalpara-title
 **Conteúdo**
@@ -947,15 +937,15 @@ número às vezes grande de requisitos de qualidade.
 A árvore de qualidade é uma visão geral de alto nível das metas e
 requisitos de qualidade:
 
--   refinamento em forma de árvore do termo \"qualidade\". Use
-    \"qualidade\" ou \"utilidade\" como raiz
+- refinamento em forma de árvore do termo \"qualidade\". Use
+  \"qualidade\" ou \"utilidade\" como raiz
 
--   um mapa mental com categorias de qualidade como ramos principais
+- um mapa mental com categorias de qualidade como ramos principais
 
 Em qualquer caso, a árvore deve incluir links para os cenários da seção
 a seguir.
 
-## Cenários de Qualidade {#_cenários_de_qualidade}
+### Cenários de Qualidade {#\_cenários_de_qualidade}
 
 ::: formalpara-title
 **Conteúdo**
@@ -969,15 +959,15 @@ ao sistema.
 
 Para arquitetos, dois tipos de cenários são importantes:
 
--   Cenários de uso (também chamados de cenários de aplicação ou
-    cenários de caso de uso) descrevem a reação do tempo de execução do
-    sistema a um determinado estímulo. Isso também inclui cenários que
-    descrevem a eficiência ou o desempenho do sistema. Exemplo: O
-    sistema reage à solicitação de um usuário em um segundo.
+- Cenários de uso (também chamados de cenários de aplicação ou
+  cenários de caso de uso) descrevem a reação do tempo de execução do
+  sistema a um determinado estímulo. Isso também inclui cenários que
+  descrevem a eficiência ou o desempenho do sistema. Exemplo: O
+  sistema reage à solicitação de um usuário em um segundo.
 
--   Cenários de mudança descrevem uma modificação do sistema ou de seu
-    ambiente imediato. Exemplo: Funcionalidade adicional é implementada
-    ou requisitos para um atributo de qualidade mudam.
+- Cenários de mudança descrevem uma modificação do sistema ou de seu
+  ambiente imediato. Exemplo: Funcionalidade adicional é implementada
+  ou requisitos para um atributo de qualidade mudam.
 
 ::: formalpara-title
 **Motivação**
@@ -997,7 +987,7 @@ avaliados.
 
 Tabular ou texto livre.
 
-# Riscos e Débitos Técnicos {#section-technical-risks}
+## Riscos e Débitos Técnicos {#section-technical-risks}
 
 ::: formalpara-title
 **Conteúdo**
@@ -1034,7 +1024,7 @@ técnicos.
 Veja [Risks and Technical Debt](https://docs.arc42.org/section-11/) na
 documentação do arc42.
 
-# Glossário {#section-glossary}
+## Glossário {#section-glossary}
 
 ::: formalpara-title
 **Conteúdo**
@@ -1053,9 +1043,9 @@ em equipes multilíngues.
 Você deve definir claramente seus termos, para que todas as partes
 interessadas
 
--   tenham um entendimento idêntico desses termos
+- tenham um entendimento idêntico desses termos
 
--   não usem sinônimos e homônimos
+- não usem sinônimos e homônimos
 
 ::: formalpara-title
 **Forma**
@@ -1072,10 +1062,7 @@ Possivelmente mais colunas, caso precise de traduções.
 Veja [Glossary](https://docs.arc42.org/section-12/) na documentação do
 arc42.
 
-+----------------------+-----------------------------------------------+
-| Termo                | Definição                                     |
-+======================+===============================================+
-| *\<Termo-1\>*        | *\<definição-1\>*                             |
-+----------------------+-----------------------------------------------+
-| *\<Termo-2\>*        | *\<definição-2\>*                             |
-+----------------------+-----------------------------------------------+
+|     Termo     |     Definição     |
+| :-----------: | :---------------: |
+| _\<Termo-1\>_ | _\<definição-1\>_ |
+| _\<Termo-2\>_ | _\<definição-2\>_ |
