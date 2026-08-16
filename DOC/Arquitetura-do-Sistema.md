@@ -36,8 +36,6 @@ de software e a equipe de desenvolvimento devem considerar. Isso inclui
 
 - objetivos de negócios subjacentes;
 
-  aa
-
 - recursos essenciais;
 
 - requisitos funcionais essenciais;
