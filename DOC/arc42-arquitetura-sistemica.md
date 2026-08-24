@@ -87,7 +87,7 @@ C4Context
     Rel(hospede, Sistema_parceiro, "Realiza Reserva")
     BiRel(Sistema_parceiro, Sistema_interno_hoteleiro, "Notifica e envia informações da hospedagem")
 
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
 ```
 
 ## 4. Estratégia de Solução
@@ -106,7 +106,7 @@ C4Container
     Rel(Sistema_parceiro, api, "Envia as informações da reserva", "HTTPS/JSON")
     Rel(api, banco_de_dados, "Atualiza, lê e grava", "SQL")
 
-    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
+    UpdateLayoutConfig($c4ShapeInRow="1", $c4BoundaryInRow="1")
 ```
 
 ## 5. Visão de Blocos de Construção
