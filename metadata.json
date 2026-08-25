@@ -1,0 +1,6 @@
+{
+  "name": "CloudInn",
+  "description": "Sistema interno de gestão hoteleira para reservas, quartos e hóspedes",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

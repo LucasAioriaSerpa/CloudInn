@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --cloud-dark: #28262C;
+    --cloud-purple: #998FC7;
+    --cloud-lavender: #D4C2FC;
+    --cloud-bg: #F9F5FF;
+    --cloud-blue: #14248A;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #F9F5FF;
+    color: #28262C;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  }
+}
+
+/* Custom CloudInn Color Utilities */
+.bg-cloud-dark { background-color: #28262C; }
+.bg-cloud-purple { background-color: #998FC7; }
+.bg-cloud-lavender { background-color: #D4C2FC; }
+.bg-cloud-bg { background-color: #F9F5FF; }
+.bg-cloud-blue { background-color: #14248A; }
+
+.text-cloud-dark { color: #28262C; }
+.text-cloud-purple { color: #998FC7; }
+.text-cloud-lavender { color: #D4C2FC; }
+.text-cloud-bg { color: #F9F5FF; }
+.text-cloud-blue { color: #14248A; }
+
+.border-cloud-dark { border-color: #28262C; }
+.border-cloud-purple { border-color: #998FC7; }
+.border-cloud-lavender { border-color: #D4C2FC; }
+.border-cloud-blue { border-color: #14248A; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F9F5FF;
+}
+::-webkit-scrollbar-thumb {
+  background: #D4C2FC;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #998FC7;
+}
