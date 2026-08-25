@@ -2,54 +2,90 @@
 
 @layer base {
   :root {
-    --cloud-dark: #28262C;
-    --cloud-purple: #998FC7;
-    --cloud-lavender: #D4C2FC;
-    --cloud-bg: #F9F5FF;
-    --cloud-blue: #14248A;
+    --cloud-dark: #28262c;
+    --cloud-purple: #998fc7;
+    --cloud-lavender: #d4c2fc;
+    --cloud-bg: #f9f5ff;
+    --cloud-blue: #14248a;
   }
 
   body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-    background-color: #F9F5FF;
-    color: #28262C;
+    font-family:
+      "Plus Jakarta Sans",
+      system-ui,
+      -apple-system,
+      sans-serif;
+    background-color: var(--cloud-bg);
+    color: var(--cloud-dark);
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Outfit", "Plus Jakarta Sans", sans-serif;
   }
 }
 
 /* Custom CloudInn Color Utilities */
-.bg-cloud-dark { background-color: #28262C; }
-.bg-cloud-purple { background-color: #998FC7; }
-.bg-cloud-lavender { background-color: #D4C2FC; }
-.bg-cloud-bg { background-color: #F9F5FF; }
-.bg-cloud-blue { background-color: #14248A; }
+.bg-cloud-dark {
+  background-color: var(--cloud-dark);
+}
+.bg-cloud-purple {
+  background-color: var(--cloud-purple);
+}
+.bg-cloud-lavender {
+  background-color: var(--cloud-lavender);
+}
+.bg-cloud-bg {
+  background-color: var(--cloud-bg);
+}
+.bg-cloud-blue {
+  background-color: var(--cloud-blue);
+}
 
-.text-cloud-dark { color: #28262C; }
-.text-cloud-purple { color: #998FC7; }
-.text-cloud-lavender { color: #D4C2FC; }
-.text-cloud-bg { color: #F9F5FF; }
-.text-cloud-blue { color: #14248A; }
+.text-cloud-dark {
+  color: var(--cloud-dark);
+}
+.text-cloud-purple {
+  color: var(--cloud-purple);
+}
+.text-cloud-lavender {
+  color: var(--cloud-lavender);
+}
+.text-cloud-bg {
+  color: var(--cloud-bg);
+}
+.text-cloud-blue {
+  color: var(--cloud-blue);
+}
 
-.border-cloud-dark { border-color: #28262C; }
-.border-cloud-purple { border-color: #998FC7; }
-.border-cloud-lavender { border-color: #D4C2FC; }
-.border-cloud-blue { border-color: #14248A; }
+.border-cloud-dark {
+  border-color: var(--cloud-dark);
+}
+.border-cloud-purple {
+  border-color: var(--cloud-purple);
+}
+.border-cloud-lavender {
+  border-color: var(--cloud-lavender);
+}
+.border-cloud-blue {
+  border-color: var(--cloud-blue);
+}
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F9F5FF;
+  background: var(--cloud-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D4C2FC;
+  background: var(--cloud-lavender);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #998FC7;
+  background: var(--cloud-purple);
 }

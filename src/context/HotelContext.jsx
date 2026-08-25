@@ -1,11 +1,18 @@
 /**
  * @fileoverview Contexto global de estado para o ecossistema CloudInn
  */
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { reservationService } from '../services/reservationService.js';
-import { roomService } from '../services/roomService.js';
-import { guestService } from '../services/guestService.js';
-import { mockStorage } from '../mocks/mockStorage.js';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+import { reservationService } from "../services/reservationService.js";
+import { roomService } from "../services/roomService.js";
+import { guestService } from "../services/guestService.js";
+import { mockStorage } from "../mocks/mockStorage.js";
 
 const HotelContext = createContext(null);
 
@@ -18,7 +25,7 @@ export function HotelProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
   // Adiciona toast de feedback
-  const addToast = useCallback((message, type = 'success') => {
+  const addToast = useCallback((message, type = "success") => {
     const id = Date.now() + Math.random();
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
@@ -44,8 +51,11 @@ export function HotelProvider({ children }) {
       setRooms(roomData || []);
       setGuests(guestData || []);
     } catch (err) {
-      setError(err.message || 'Falha ao carregar dados do sistema.');
-      addToast('Erro ao sincronizar com a API. Dados em modo autônomo.', 'warning');
+      setError(err.message || "Falha ao carregar dados do sistema.");
+      addToast(
+        "Erro ao sincronizar com a API. Dados em modo autônomo.",
+        "warning",
+      );
     } finally {
       setLoading(false);
     }
@@ -60,10 +70,13 @@ export function HotelProvider({ children }) {
     try {
       await reservationService.createReservation(reservationData);
       await loadData();
-      addToast(`Reserva cadastrada com sucesso para ${reservationData.guest?.name || 'hóspede'}!`, 'success');
+      addToast(
+        `Reserva cadastrada com sucesso para ${reservationData.guest?.name || "hóspede"}!`,
+        "success",
+      );
       return true;
     } catch (err) {
-      addToast(err.message || 'Erro ao criar reserva.', 'error');
+      addToast(err.message || "Erro ao criar reserva.", "error");
       return false;
     }
   };
@@ -72,10 +85,13 @@ export function HotelProvider({ children }) {
     try {
       await reservationService.registerCheckIn(reservationId);
       await loadData();
-      addToast(`Check-in registrado com sucesso! Quarto atualizado para Ocupado.`, 'success');
+      addToast(
+        `Check-in registrado com sucesso! Quarto atualizado para Ocupado.`,
+        "success",
+      );
       return true;
     } catch (err) {
-      addToast(err.message || 'Erro ao realizar check-in.', 'error');
+      addToast(err.message || "Erro ao realizar check-in.", "error");
       return false;
     }
   };
@@ -84,10 +100,13 @@ export function HotelProvider({ children }) {
     try {
       await reservationService.registerCheckOut(reservationId);
       await loadData();
-      addToast(`Check-out registrado com sucesso! Quarto alterado para Sujo.`, 'success');
+      addToast(
+        `Check-out registrado com sucesso! Quarto alterado para Sujo.`,
+        "success",
+      );
       return true;
     } catch (err) {
-      addToast(err.message || 'Erro ao realizar check-out.', 'error');
+      addToast(err.message || "Erro ao realizar check-out.", "error");
       return false;
     }
   };
@@ -97,10 +116,13 @@ export function HotelProvider({ children }) {
     try {
       await roomService.updateRoomStatus(roomId, newStatus);
       await loadData();
-      addToast(`Status do quarto atualizado com sucesso para "${newStatus}".`, 'success');
+      addToast(
+        `Status do quarto atualizado com sucesso para "${newStatus}".`,
+        "success",
+      );
       return true;
     } catch (err) {
-      addToast(err.message || 'Erro ao atualizar status do quarto.', 'error');
+      addToast(err.message || "Erro ao atualizar status do quarto.", "error");
       return false;
     }
   };
@@ -110,10 +132,13 @@ export function HotelProvider({ children }) {
     try {
       const created = await guestService.createGuest(guestData);
       await loadData();
-      addToast(`Hóspede "${guestData.name}" cadastrado com sucesso!`, 'success');
+      addToast(
+        `Hóspede "${guestData.name}" cadastrado com sucesso!`,
+        "success",
+      );
       return created;
     } catch (err) {
-      addToast(err.message || 'Erro ao cadastrar hóspede.', 'error');
+      addToast(err.message || "Erro ao cadastrar hóspede.", "error");
       return null;
     }
   };
@@ -122,10 +147,13 @@ export function HotelProvider({ children }) {
     try {
       await guestService.updateGuest(guestId, guestData);
       await loadData();
-      addToast(`Dados do hóspede "${guestData.name}" atualizados com sucesso!`, 'success');
+      addToast(
+        `Dados do hóspede "${guestData.name}" atualizados com sucesso!`,
+        "success",
+      );
       return true;
     } catch (err) {
-      addToast(err.message || 'Erro ao atualizar hóspede.', 'error');
+      addToast(err.message || "Erro ao atualizar hóspede.", "error");
       return false;
     }
   };
@@ -134,23 +162,29 @@ export function HotelProvider({ children }) {
   const handleResetData = async () => {
     mockStorage.resetToDefault();
     await loadData();
-    addToast('Dados do sistema redefinidos para os valores padrão com sucesso.', 'info');
+    addToast(
+      "Dados do sistema redefinidos para os valores padrão com sucesso.",
+      "info",
+    );
   };
 
   // Estatísticas e métricas computadas
   const stats = useMemo(() => {
     const totalRooms = rooms.length;
-    const occupiedRooms = rooms.filter((r) => r.status === 'occupied').length;
-    const reservedRooms = rooms.filter((r) => r.status === 'reserved').length;
-    const availableRooms = rooms.filter((r) => r.status === 'available').length;
-    const dirtyRooms = rooms.filter((r) => r.status === 'dirty').length;
-    const cleaningRooms = rooms.filter((r) => r.status === 'cleaning').length;
+    const occupiedRooms = rooms.filter((r) => r.status === "occupied").length;
+    const reservedRooms = rooms.filter((r) => r.status === "reserved").length;
+    const availableRooms = rooms.filter((r) => r.status === "available").length;
+    const dirtyRooms = rooms.filter((r) => r.status === "dirty").length;
+    const cleaningRooms = rooms.filter((r) => r.status === "cleaning").length;
 
-    const occupancyRate = totalRooms > 0 ? Math.round(((occupiedRooms + reservedRooms) / totalRooms) * 100) : 0;
+    const occupancyRate =
+      totalRooms > 0
+        ? Math.round(((occupiedRooms + reservedRooms) / totalRooms) * 100)
+        : 0;
 
-    const pendingCheckins = reservations.filter((r) => r.status === 'pending');
-    const activeStays = reservations.filter((r) => r.status === 'active');
-    const completedStays = reservations.filter((r) => r.status === 'completed');
+    const pendingCheckins = reservations.filter((r) => r.status === "pending");
+    const activeStays = reservations.filter((r) => r.status === "active");
+    const completedStays = reservations.filter((r) => r.status === "completed");
 
     return {
       totalRooms,
@@ -188,13 +222,15 @@ export function HotelProvider({ children }) {
     handleResetData,
   };
 
-  return <HotelContext.Provider value={value}>{children}</HotelContext.Provider>;
+  return (
+    <HotelContext.Provider value={value}>{children}</HotelContext.Provider>
+  );
 }
 
 export function useHotel() {
   const context = useContext(HotelContext);
   if (!context) {
-    throw new Error('useHotel deve ser utilizado dentro de um HotelProvider');
+    throw new Error("useHotel deve ser utilizado dentro de um HotelProvider");
   }
   return context;
 }

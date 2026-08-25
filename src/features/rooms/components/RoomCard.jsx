@@ -1,17 +1,26 @@
 /**
  * @fileoverview Card visual de quarto com ações rápidas de governança (RF06, RF10, RF11)
  */
-import React from 'react';
-import { BedDouble, Sparkles, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
-import { Card } from '../../../components/common/Card.jsx';
-import { RoomStatusBadge } from '../../../components/common/Badge.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { ROOM_TYPE_LABELS, ROOM_STATUS_BADGES } from '../../../config/constants.js';
+import React from "react";
+import {
+  BedDouble,
+  Sparkles,
+  CheckCircle2,
+  AlertTriangle,
+  ArrowRight,
+} from "lucide-react";
+import { Card } from "../../../components/common/Card.jsx";
+import { RoomStatusBadge } from "../../../components/common/Badge.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import {
+  ROOM_TYPE_LABELS,
+  ROOM_STATUS_BADGES,
+} from "../../../config/constants.js";
 
 export function RoomCard({ room, onUpdateStatus, onQuickAction }) {
-  const isDirty = room.status === 'dirty';
-  const isCleaning = room.status === 'cleaning';
-  const isAvailable = room.status === 'available';
+  const isDirty = room.status === "dirty";
+  const isCleaning = room.status === "cleaning";
+  const isAvailable = room.status === "available";
 
   const badgeConfig = ROOM_STATUS_BADGES[room.status];
 
@@ -48,7 +57,7 @@ export function RoomCard({ room, onUpdateStatus, onQuickAction }) {
             icon={Sparkles}
             className="w-full text-xs font-bold bg-[#D4C2FC] text-[#28262C] hover:bg-[#c3abf7]"
             title="Iniciar processo de limpeza (RF10)"
-            onClick={() => onQuickAction(room.id, 'cleaning')}
+            onClick={() => onQuickAction(room.id, "cleaning")}
           >
             Iniciar Limpeza
           </Button>
@@ -61,7 +70,7 @@ export function RoomCard({ room, onUpdateStatus, onQuickAction }) {
             icon={CheckCircle2}
             className="w-full text-xs font-bold"
             title="Liberar e disponibilizar quarto limpo (RF11)"
-            onClick={() => onQuickAction(room.id, 'available')}
+            onClick={() => onQuickAction(room.id, "available")}
           >
             Liberar Quarto
           </Button>

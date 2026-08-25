@@ -1,7 +1,7 @@
 /**
  * @fileoverview Página do Painel / Visão Geral da Recepção
  */
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   BedDouble,
   CalendarCheck,
@@ -12,23 +12,24 @@ import {
   LogOut,
   Radio,
   CheckCircle2,
-} from 'lucide-react';
-import { useHotel } from '../../context/HotelContext.jsx';
-import { ROUTES } from '../../config/constants.js';
-import { MetricCard } from './components/MetricCard.jsx';
-import { QuickRoomStatus } from './components/QuickRoomStatus.jsx';
-import { TodayActivities } from './components/TodayActivities.jsx';
-import { Button } from '../../components/common/Button.jsx';
-import { LoadingState } from '../../components/common/LoadingState.jsx';
-import { ErrorState } from '../../components/common/ErrorState.jsx';
-import { CheckInModal } from '../reservations/components/CheckInModal.jsx';
-import { CheckOutModal } from '../reservations/components/CheckOutModal.jsx';
-import { RoomStatusModal } from '../rooms/components/RoomStatusModal.jsx';
-import { ReservationFormModal } from '../reservations/components/ReservationFormModal.jsx';
-import { ReservationDetailModal } from '../reservations/components/ReservationDetailModal.jsx';
+} from "lucide-react";
+import { useHotel } from "../../context/HotelContext.jsx";
+import { ROUTES } from "../../config/constants.js";
+import { MetricCard } from "./components/MetricCard.jsx";
+import { QuickRoomStatus } from "./components/QuickRoomStatus.jsx";
+import { TodayActivities } from "./components/TodayActivities.jsx";
+import { Button } from "../../components/common/Button.jsx";
+import { LoadingState } from "../../components/common/LoadingState.jsx";
+import { ErrorState } from "../../components/common/ErrorState.jsx";
+import { CheckInModal } from "../reservations/components/CheckInModal.jsx";
+import { CheckOutModal } from "../reservations/components/CheckOutModal.jsx";
+import { RoomStatusModal } from "../rooms/components/RoomStatusModal.jsx";
+import { ReservationFormModal } from "../reservations/components/ReservationFormModal.jsx";
+import { ReservationDetailModal } from "../reservations/components/ReservationDetailModal.jsx";
 
 export function DashboardPage({ onNavigate }) {
-  const { reservations, rooms, stats, loading, error, refreshData } = useHotel();
+  const { reservations, rooms, stats, loading, error, refreshData } =
+    useHotel();
 
   // Modals state
   const [selectedResForCheckIn, setSelectedResForCheckIn] = useState(null);
@@ -48,7 +49,7 @@ export function DashboardPage({ onNavigate }) {
   return (
     <div className="space-y-6">
       {/* Top Banner with Quick Actions */}
-      <div className="bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className=".bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#D4C2FC] text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5 text-[#D4C2FC]" />
@@ -58,7 +59,8 @@ export function DashboardPage({ onNavigate }) {
             Painel de Recepção & Governança
           </h2>
           <p className="text-sm text-[#D4C2FC]/80 mt-1">
-            Acompanhe a ocupação, execute check-ins/outs e gerencie a liberação de quartos em tempo real.
+            Acompanhe a ocupação, execute check-ins/outs e gerencie a liberação
+            de quartos em tempo real.
           </p>
         </div>
 
@@ -118,8 +120,8 @@ export function DashboardPage({ onNavigate }) {
           value={stats.dirtyRooms + stats.cleaningRooms}
           subtitle={`${stats.dirtyRooms} sujos • ${stats.cleaningRooms} em limpeza`}
           icon={Sparkles}
-          trend={stats.dirtyRooms > 0 ? 'Ação requerida' : 'Em dia'}
-          color={stats.dirtyRooms > 0 ? 'rose' : 'emerald'}
+          trend={stats.dirtyRooms > 0 ? "Ação requerida" : "Em dia"}
+          color={stats.dirtyRooms > 0 ? "rose" : "emerald"}
           onClick={() => onNavigate(ROUTES.ROOMS)}
         />
       </div>

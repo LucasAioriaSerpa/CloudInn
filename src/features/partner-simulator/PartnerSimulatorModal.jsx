@@ -2,55 +2,82 @@
  * @fileoverview Simulador de Notificação de Reserva de Parceiros Externos (RF01)
  * Permite simular a chamada HTTP POST /reservation enviada por Booking.com, Expedia, etc.
  */
-import React, { useState } from 'react';
-import { Radio, Send, CheckCircle2, AlertCircle, Copy, Sparkles, Building2 } from 'lucide-react';
-import { Modal } from '../../components/common/Modal.jsx';
-import { Button } from '../../components/common/Button.jsx';
-import { Input, Textarea } from '../../components/common/Input.jsx';
-import { Select } from '../../components/common/Select.jsx';
-import { useHotel } from '../../context/HotelContext.jsx';
+import React, { useState } from "react";
+import {
+  Radio,
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  Copy,
+  Sparkles,
+  Building2,
+} from "lucide-react";
+import { Modal } from "../../components/common/Modal.jsx";
+import { Button } from "../../components/common/Button.jsx";
+import { Input, Textarea } from "../../components/common/Input.jsx";
+import { Select } from "../../components/common/Select.jsx";
+import { useHotel } from "../../context/HotelContext.jsx";
 
 const PARTNER_TEMPLATES = [
   {
-    id: 'booking',
-    name: 'Booking.com API',
-    guest: { name: 'Lucas Gabriel Albuquerque', document: '789.456.123-00', email: 'lucas.albuquerque@gmail.com', phone: '+55 41 98877-6655' },
-    roomNumber: '302C',
-    roomType: 'SUI',
-    checkInDate: '2026-09-01T14:00:00Z',
-    checkOutDate: '2026-09-05T12:00:00Z',
+    id: "booking",
+    name: "Booking.com API",
+    guest: {
+      name: "Lucas Gabriel Albuquerque",
+      document: "789.456.123-00",
+      email: "lucas.albuquerque@gmail.com",
+      phone: "+55 41 98877-6655",
+    },
+    roomNumber: "302C",
+    roomType: "SUI",
+    checkInDate: "2026-09-01T14:00:00Z",
+    checkOutDate: "2026-09-05T12:00:00Z",
   },
   {
-    id: 'expedia',
-    name: 'Expedia Partner Solutions',
-    guest: { name: 'Camila Vasconcelos', document: '333.222.111-99', email: 'camila.v@corporativo.com', phone: '+55 11 97654-3210' },
-    roomNumber: '202B',
-    roomType: 'DLX',
-    checkInDate: '2026-08-29T15:00:00Z',
-    checkOutDate: '2026-09-02T11:00:00Z',
+    id: "expedia",
+    name: "Expedia Partner Solutions",
+    guest: {
+      name: "Camila Vasconcelos",
+      document: "333.222.111-99",
+      email: "camila.v@corporativo.com",
+      phone: "+55 11 97654-3210",
+    },
+    roomNumber: "202B",
+    roomType: "DLX",
+    checkInDate: "2026-08-29T15:00:00Z",
+    checkOutDate: "2026-09-02T11:00:00Z",
   },
   {
-    id: 'airbnb',
-    name: 'Airbnb Direct Connect',
-    guest: { name: 'Fernando Guimarães', document: 'PASS-BR776655', email: 'fernando.g@nomad.com', phone: '+55 21 99123-4567' },
-    roomNumber: '401P',
-    roomType: 'PRE',
-    checkInDate: '2026-09-10T14:00:00Z',
-    checkOutDate: '2026-09-15T12:00:00Z',
+    id: "airbnb",
+    name: "Airbnb Direct Connect",
+    guest: {
+      name: "Fernando Guimarães",
+      document: "PASS-BR776655",
+      email: "fernando.g@nomad.com",
+      phone: "+55 21 99123-4567",
+    },
+    roomNumber: "401P",
+    roomType: "PRE",
+    checkInDate: "2026-09-10T14:00:00Z",
+    checkOutDate: "2026-09-15T12:00:00Z",
   },
 ];
 
 export function PartnerSimulatorModal({ isOpen, onClose }) {
   const { rooms, handleCreateReservation } = useHotel();
 
-  const [selectedPartner, setSelectedPartner] = useState('booking');
+  const [selectedPartner, setSelectedPartner] = useState("booking");
   const [guestName, setGuestName] = useState(PARTNER_TEMPLATES[0].guest.name);
   const [guestDoc, setGuestDoc] = useState(PARTNER_TEMPLATES[0].guest.document);
-  const [guestEmail, setGuestEmail] = useState(PARTNER_TEMPLATES[0].guest.email);
-  const [guestPhone, setGuestPhone] = useState(PARTNER_TEMPLATES[0].guest.phone);
-  const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [checkInDate, setCheckInDate] = useState('2026-09-01T14:00');
-  const [checkOutDate, setCheckOutDate] = useState('2026-09-05T12:00');
+  const [guestEmail, setGuestEmail] = useState(
+    PARTNER_TEMPLATES[0].guest.email,
+  );
+  const [guestPhone, setGuestPhone] = useState(
+    PARTNER_TEMPLATES[0].guest.phone,
+  );
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [checkInDate, setCheckInDate] = useState("2026-09-01T14:00");
+  const [checkOutDate, setCheckOutDate] = useState("2026-09-05T12:00");
 
   const [submitting, setSubmitting] = useState(false);
   const [lastResponse, setLastResponse] = useState(null);
@@ -75,7 +102,8 @@ export function PartnerSimulatorModal({ isOpen, onClose }) {
     setLastResponse(null);
 
     try {
-      const roomObj = rooms.find((r) => Number(r.id) === Number(selectedRoomId)) || rooms[0];
+      const roomObj =
+        rooms.find((r) => Number(r.id) === Number(selectedRoomId)) || rooms[0];
 
       const payload = {
         guest: {
@@ -87,19 +115,19 @@ export function PartnerSimulatorModal({ isOpen, onClose }) {
         room: roomObj,
         checkInDate: new Date(checkInDate).toISOString(),
         checkOutDate: new Date(checkOutDate).toISOString(),
-        status: 'pending',
+        status: "pending",
       };
 
       const result = await handleCreateReservation(payload);
       setLastResponse({
         status: 200,
-        message: 'Reserva registrada com sucesso via webhook do parceiro!',
+        message: "Reserva registrada com sucesso via webhook do parceiro!",
         payload,
       });
     } catch (err) {
       setLastResponse({
         status: 400,
-        error: err.message || 'Falha ao processar notificação.',
+        error: err.message || "Falha ao processar notificação.",
       });
     } finally {
       setSubmitting(false);
@@ -119,7 +147,10 @@ export function PartnerSimulatorModal({ isOpen, onClose }) {
         <div className="p-3.5 rounded-xl bg-[#14248A]/5 border border-[#14248A]/20 text-xs text-[#28262C] flex items-start gap-2.5">
           <Radio className="w-4 h-4 text-[#14248A] shrink-0 mt-0.5" />
           <div>
-            <strong>Requisito RF01 (arc42 & Swagger):</strong> O sistema CloudInn recebe notificações de reservas originadas por parceiros e plataformas de viagens, persistindo o hóspede, associando o quarto e configurando as datas de estadia.
+            <strong>Requisito RF01 (arc42 & Swagger):</strong> O sistema
+            CloudInn recebe notificações de reservas originadas por parceiros e
+            plataformas de viagens, persistindo o hóspede, associando o quarto e
+            configurando as datas de estadia.
           </div>
         </div>
 
@@ -136,8 +167,8 @@ export function PartnerSimulatorModal({ isOpen, onClose }) {
                 onClick={() => handleTemplateChange(p.id)}
                 className={`p-3 rounded-xl border text-left transition-all ${
                   selectedPartner === p.id
-                    ? 'border-[#14248A] bg-[#F9F5FF] text-[#14248A] ring-2 ring-[#D4C2FC] font-semibold'
-                    : 'border-[#D4C2FC]/70 hover:border-[#998FC7] bg-white text-[#28262C]'
+                    ? "border-[#14248A] bg-[#F9F5FF] text-[#14248A] ring-2 ring-[#D4C2FC] font-semibold"
+                    : "border-[#D4C2FC]/70 hover:border-[#998FC7] bg-white text-[#28262C]"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -184,7 +215,7 @@ export function PartnerSimulatorModal({ isOpen, onClose }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
               <Select
                 label="Quarto Atribuído"
-                value={selectedRoomId || (rooms[0] ? String(rooms[0].id) : '')}
+                value={selectedRoomId || (rooms[0] ? String(rooms[0].id) : "")}
                 onChange={(e) => setSelectedRoomId(e.target.value)}
                 options={rooms.map((r) => ({
                   value: r.id,

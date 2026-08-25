@@ -1,13 +1,13 @@
 /**
  * @fileoverview Inputs de formulário com foco, labels acessíveis e mensagens de validação
  */
-import React from 'react';
+import React from "react";
 
 export function Input({
   label,
   id,
   name,
-  type = 'text',
+  type = "text",
   value,
   onChange,
   placeholder,
@@ -16,7 +16,7 @@ export function Input({
   error,
   helperText,
   icon: Icon,
-  className = '',
+  className = "",
   ...props
 }) {
   const inputId = id || name;
@@ -24,7 +24,10 @@ export function Input({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="text-xs font-semibold text-[#28262C] flex items-center gap-1">
+        <label
+          htmlFor={inputId}
+          className="text-xs font-semibold text-[#28262C] flex items-center gap-1"
+        >
           {label}
           {required && <span className="text-rose-500">*</span>}
         </label>
@@ -45,17 +48,19 @@ export function Input({
           required={required}
           disabled={disabled}
           className={`w-full text-sm rounded-lg border bg-white px-3 py-2 text-[#28262C] placeholder-[#28262C]/40 transition-colors focus:outline-none focus:ring-2 disabled:bg-[#F9F5FF] disabled:cursor-not-allowed ${
-            Icon ? 'pl-9' : ''
+            Icon ? "pl-9" : ""
           } ${
             error
-              ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-              : 'border-[#998FC7]/40 focus:border-[#14248A] focus:ring-[#D4C2FC]'
+              ? "border-rose-300 focus:border-rose-500 focus:ring-rose-200"
+              : "border-[#998FC7]/40 focus:border-[#14248A] focus:ring-[#D4C2FC]"
           }`}
           {...props}
         />
       </div>
       {error && <span className="text-xs text-rose-500 mt-0.5">{error}</span>}
-      {!error && helperText && <span className="text-xs text-[#28262C]/60 mt-0.5">{helperText}</span>}
+      {!error && helperText && (
+        <span className="text-xs text-[#28262C]/60 mt-0.5">{helperText}</span>
+      )}
     </div>
   );
 }
@@ -71,7 +76,7 @@ export function Textarea({
   disabled = false,
   error,
   rows = 3,
-  className = '',
+  className = "",
   ...props
 }) {
   const inputId = id || name;
@@ -79,7 +84,10 @@ export function Textarea({
   return (
     <div className={`flex flex-col gap-1.5 ${className}`}>
       {label && (
-        <label htmlFor={inputId} className="text-xs font-semibold text-[#28262C] flex items-center gap-1">
+        <label
+          htmlFor={inputId}
+          className="text-xs font-semibold text-[#28262C] flex items-center gap-1"
+        >
           {label}
           {required && <span className="text-rose-500">*</span>}
         </label>
@@ -95,8 +103,8 @@ export function Textarea({
         disabled={disabled}
         className={`w-full text-sm rounded-lg border bg-white px-3 py-2 text-[#28262C] placeholder-[#28262C]/40 transition-colors focus:outline-none focus:ring-2 disabled:bg-[#F9F5FF] disabled:cursor-not-allowed ${
           error
-            ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200'
-            : 'border-[#998FC7]/40 focus:border-[#14248A] focus:ring-[#D4C2FC]'
+            ? "border-rose-300 focus:border-rose-500 focus:ring-rose-200"
+            : "border-[#998FC7]/40 focus:border-[#14248A] focus:ring-[#D4C2FC]"
         }`}
         {...props}
       />

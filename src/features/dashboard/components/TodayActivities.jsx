@@ -1,11 +1,15 @@
 /**
  * @fileoverview Lista de atividades imediatas da recepção (Check-ins pendentes e Check-outs do dia)
  */
-import React from 'react';
-import { LogIn, LogOut, ArrowRight, User, Calendar } from 'lucide-react';
-import { Card, CardHeader, CardBody } from '../../../components/common/Card.jsx';
-import { ReservationBadge } from '../../../components/common/Badge.jsx';
-import { Button } from '../../../components/common/Button.jsx';
+import React from "react";
+import { LogIn, LogOut, ArrowRight, User, Calendar } from "lucide-react";
+import {
+  Card,
+  CardHeader,
+  CardBody,
+} from "../../../components/common/Card.jsx";
+import { ReservationBadge } from "../../../components/common/Badge.jsx";
+import { Button } from "../../../components/common/Button.jsx";
 
 export function TodayActivities({
   reservations,
@@ -14,14 +18,19 @@ export function TodayActivities({
   onViewDetails,
   onNavigateReservations,
 }) {
-  const pendingCheckins = reservations.filter((r) => r.status === 'pending');
-  const activeStays = reservations.filter((r) => r.status === 'active');
+  const pendingCheckins = reservations.filter((r) => r.status === "pending");
+  const activeStays = reservations.filter((r) => r.status === "active");
 
   const formatDate = (isoString) => {
-    if (!isoString) return '-';
+    if (!isoString) return "-";
     try {
       const date = new Date(isoString);
-      return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch {
       return isoString;
     }
@@ -62,10 +71,10 @@ export function TodayActivities({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-[#28262C] truncate">
-                        {res.guest?.name || 'Hóspede'}
+                        {res.guest?.name || "Hóspede"}
                       </span>
                       <span className="px-1.5 py-0.5 rounded bg-[#14248A]/10 text-[#14248A] text-[10px] font-bold">
-                        Quarto {res.room?.number || '-'}
+                        Quarto {res.room?.number || "-"}
                       </span>
                     </div>
                     <p className="text-[11px] text-[#28262C]/60 truncate mt-0.5">
@@ -109,10 +118,10 @@ export function TodayActivities({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-sm text-[#28262C] truncate">
-                        {res.guest?.name || 'Hóspede'}
+                        {res.guest?.name || "Hóspede"}
                       </span>
                       <span className="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] font-bold">
-                        Quarto {res.room?.number || '-'}
+                        Quarto {res.room?.number || "-"}
                       </span>
                     </div>
                     <p className="text-[11px] text-[#28262C]/60 truncate mt-0.5">

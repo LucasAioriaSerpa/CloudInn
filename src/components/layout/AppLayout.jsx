@@ -1,12 +1,12 @@
 /**
  * @fileoverview Layout mestre da aplicação CloudInn
  */
-import React, { useState } from 'react';
-import { Sidebar } from './Sidebar.jsx';
-import { Header } from './Header.jsx';
-import { ToastContainer } from '../common/Toast.jsx';
-import { PartnerSimulatorModal } from '../../features/partner-simulator/PartnerSimulatorModal.jsx';
-import { ApiExplorerModal } from '../../features/api-docs/ApiExplorerModal.jsx';
+import React, { useState } from "react";
+import { Sidebar } from "./Sidebar.jsx";
+import { Header } from "./Header.jsx";
+import { ToastContainer } from "../common/Toast.jsx";
+import { PartnerSimulatorModal } from "../../features/partner-simulator/PartnerSimulatorModal.jsx";
+import { ApiExplorerModal } from "../../features/api-docs/ApiExplorerModal.jsx";
 
 export function AppLayout({ activeRoute, onNavigate, children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

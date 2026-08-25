@@ -1,58 +1,59 @@
 /**
  * @fileoverview Modal de Cadastro de Nova Reserva (RF01, RF03, RF04, RF05)
  */
-import React, { useState } from 'react';
-import { Plus, User, BedDouble, Calendar, Check, Search } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { Input } from '../../../components/common/Input.jsx';
-import { Select } from '../../../components/common/Select.jsx';
-import { useHotel } from '../../../context/HotelContext.jsx';
-import { ROOM_TYPE_LABELS } from '../../../config/constants.js';
+import React, { useState } from "react";
+import { Plus, User, BedDouble, Calendar, Check, Search } from "lucide-react";
+import { Modal } from "../../../components/common/Modal.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { Input } from "../../../components/common/Input.jsx";
+import { Select } from "../../../components/common/Select.jsx";
+import { useHotel } from "../../../context/HotelContext.jsx";
+import { ROOM_TYPE_LABELS } from "../../../config/constants.js";
 
 export function ReservationFormModal({ isOpen, onClose }) {
-  const { rooms, guests, handleCreateReservation, handleCreateGuest } = useHotel();
+  const { rooms, guests, handleCreateReservation, handleCreateGuest } =
+    useHotel();
 
   // Modo do hóspede: 'existing' ou 'new'
-  const [guestMode, setGuestMode] = useState('existing');
-  const [selectedGuestId, setSelectedGuestId] = useState('');
+  const [guestMode, setGuestMode] = useState("existing");
+  const [selectedGuestId, setSelectedGuestId] = useState("");
 
   // Formulário do novo hóspede
   const [newGuest, setNewGuest] = useState({
-    name: '',
-    document: '',
-    email: '',
-    phone: '',
+    name: "",
+    document: "",
+    email: "",
+    phone: "",
   });
 
   // Dados da reserva
-  const [selectedRoomId, setSelectedRoomId] = useState('');
-  const [checkInDate, setCheckInDate] = useState('2026-08-25T14:00');
-  const [checkOutDate, setCheckOutDate] = useState('2026-08-28T12:00');
-  const [initialStatus, setInitialStatus] = useState('pending');
+  const [selectedRoomId, setSelectedRoomId] = useState("");
+  const [checkInDate, setCheckInDate] = useState("2026-08-25T14:00");
+  const [checkOutDate, setCheckOutDate] = useState("2026-08-28T12:00");
+  const [initialStatus, setInitialStatus] = useState("pending");
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Quartos disponíveis ou todos
-  const availableRooms = rooms.filter((r) => r.status === 'available');
+  const availableRooms = rooms.filter((r) => r.status === "available");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!selectedRoomId) {
-      setError('Por favor, selecione um quarto para a reserva.');
+      setError("Por favor, selecione um quarto para a reserva.");
       return;
     }
 
     if (!checkInDate || !checkOutDate) {
-      setError('Por favor, preencha as datas de Check-in e Check-out.');
+      setError("Por favor, preencha as datas de Check-in e Check-out.");
       return;
     }
 
     if (new Date(checkOutDate) <= new Date(checkInDate)) {
-      setError('A data de Check-out deve ser posterior à data de Check-in.');
+      setError("A data de Check-out deve ser posterior à data de Check-in.");
       return;
     }
 
@@ -61,29 +62,31 @@ export function ReservationFormModal({ isOpen, onClose }) {
     try {
       let guestObj = null;
 
-      if (guestMode === 'existing') {
+      if (guestMode === "existing") {
         guestObj = guests.find((g) => Number(g.id) === Number(selectedGuestId));
         if (!guestObj) {
-          setError('Por favor, selecione um hóspede cadastrado.');
+          setError("Por favor, selecione um hóspede cadastrado.");
           setLoading(false);
           return;
         }
       } else {
         if (!newGuest.name.trim() || !newGuest.document.trim()) {
-          setError('Nome e Documento do hóspede são campos obrigatórios.');
+          setError("Nome e Documento do hóspede são campos obrigatórios.");
           setLoading(false);
           return;
         }
         // Cadastra o hóspede primeiro
         guestObj = await handleCreateGuest(newGuest);
         if (!guestObj) {
-          setError('Erro ao cadastrar novo hóspede.');
+          setError("Erro ao cadastrar novo hóspede.");
           setLoading(false);
           return;
         }
       }
 
-      const roomObj = rooms.find((r) => Number(r.id) === Number(selectedRoomId));
+      const roomObj = rooms.find(
+        (r) => Number(r.id) === Number(selectedRoomId),
+      );
 
       const payload = {
         guest: guestObj,
@@ -97,12 +100,12 @@ export function ReservationFormModal({ isOpen, onClose }) {
       if (success) {
         onClose();
         // Reset form
-        setSelectedGuestId('');
-        setSelectedRoomId('');
-        setNewGuest({ name: '', document: '', email: '', phone: '' });
+        setSelectedGuestId("");
+        setSelectedRoomId("");
+        setNewGuest({ name: "", document: "", email: "", phone: "" });
       }
     } catch (err) {
-      setError(err.message || 'Erro ao processar reserva.');
+      setError(err.message || "Erro ao processar reserva.");
     } finally {
       setLoading(false);
     }
@@ -133,22 +136,22 @@ export function ReservationFormModal({ isOpen, onClose }) {
             <div className="flex rounded-lg bg-[#F9F5FF] p-0.5 border border-[#D4C2FC]/60 text-xs">
               <button
                 type="button"
-                onClick={() => setGuestMode('existing')}
+                onClick={() => setGuestMode("existing")}
                 className={`px-3 py-1 rounded-md font-medium transition-all ${
-                  guestMode === 'existing'
-                    ? 'bg-[#14248A] text-white shadow-xs'
-                    : 'text-[#28262C]/70 hover:text-[#28262C]'
+                  guestMode === "existing"
+                    ? "bg-[#14248A] text-white shadow-xs"
+                    : "text-[#28262C]/70 hover:text-[#28262C]"
                 }`}
               >
                 Hóspede Existente
               </button>
               <button
                 type="button"
-                onClick={() => setGuestMode('new')}
+                onClick={() => setGuestMode("new")}
                 className={`px-3 py-1 rounded-md font-medium transition-all ${
-                  guestMode === 'new'
-                    ? 'bg-[#14248A] text-white shadow-xs'
-                    : 'text-[#28262C]/70 hover:text-[#28262C]'
+                  guestMode === "new"
+                    ? "bg-[#14248A] text-white shadow-xs"
+                    : "text-[#28262C]/70 hover:text-[#28262C]"
                 }`}
               >
                 Novo Cadastro
@@ -156,7 +159,7 @@ export function ReservationFormModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {guestMode === 'existing' ? (
+          {guestMode === "existing" ? (
             <Select
               label="Selecionar Hóspede Cadastrado"
               name="guestId"
@@ -165,7 +168,7 @@ export function ReservationFormModal({ isOpen, onClose }) {
               required
               options={guests.map((g) => ({
                 value: g.id,
-                label: `${g.name} — Doc: ${g.document || 'N/A'} (${g.email || g.phone || 'Sem contato'})`,
+                label: `${g.name} — Doc: ${g.document || "N/A"} (${g.email || g.phone || "Sem contato"})`,
               }))}
               placeholder="Escolha um hóspede da lista..."
             />
@@ -175,7 +178,9 @@ export function ReservationFormModal({ isOpen, onClose }) {
                 label="Nome Completo"
                 name="name"
                 value={newGuest.name}
-                onChange={(e) => setNewGuest({ ...newGuest, name: e.target.value })}
+                onChange={(e) =>
+                  setNewGuest({ ...newGuest, name: e.target.value })
+                }
                 placeholder="Ex: Carlos Santana"
                 required
               />
@@ -183,7 +188,9 @@ export function ReservationFormModal({ isOpen, onClose }) {
                 label="Documento (CPF / Passaporte)"
                 name="document"
                 value={newGuest.document}
-                onChange={(e) => setNewGuest({ ...newGuest, document: e.target.value })}
+                onChange={(e) =>
+                  setNewGuest({ ...newGuest, document: e.target.value })
+                }
                 placeholder="Ex: 123.456.789-00"
                 required
               />
@@ -192,14 +199,18 @@ export function ReservationFormModal({ isOpen, onClose }) {
                 name="email"
                 type="email"
                 value={newGuest.email}
-                onChange={(e) => setNewGuest({ ...newGuest, email: e.target.value })}
+                onChange={(e) =>
+                  setNewGuest({ ...newGuest, email: e.target.value })
+                }
                 placeholder="carlos@email.com"
               />
               <Input
                 label="Telefone / WhatsApp"
                 name="phone"
                 value={newGuest.phone}
-                onChange={(e) => setNewGuest({ ...newGuest, phone: e.target.value })}
+                onChange={(e) =>
+                  setNewGuest({ ...newGuest, phone: e.target.value })
+                }
                 placeholder="+55 11 99999-9999"
               />
             </div>
@@ -258,8 +269,11 @@ export function ReservationFormModal({ isOpen, onClose }) {
             value={initialStatus}
             onChange={(e) => setInitialStatus(e.target.value)}
             options={[
-              { value: 'pending', label: 'Pendente (Aguardando chegada)' },
-              { value: 'active', label: 'Ativa (Hóspede já presente no quarto)' },
+              { value: "pending", label: "Pendente (Aguardando chegada)" },
+              {
+                value: "active",
+                label: "Ativa (Hóspede já presente no quarto)",
+              },
             ]}
           />
         </div>
@@ -269,12 +283,7 @@ export function ReservationFormModal({ isOpen, onClose }) {
           <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            icon={Plus}
-            loading={loading}
-          >
+          <Button type="submit" variant="primary" icon={Plus} loading={loading}>
             Cadastrar Reserva
           </Button>
         </div>

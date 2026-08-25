@@ -1,8 +1,8 @@
 /**
  * @fileoverview Modal acessível com foco, backdrop e animação
  */
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect } from "react";
+import { X } from "lucide-react";
 
 export function Modal({
   isOpen,
@@ -10,22 +10,22 @@ export function Modal({
   title,
   subtitle,
   children,
-  maxWidth = 'max-w-xl',
-  id = 'app-modal',
+  maxWidth = "max-w-xl",
+  id = "app-modal",
 }) {
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === "Escape" && isOpen) {
         onClose();
       }
     };
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleKeyDown);
     }
     return () => {
-      document.body.style.overflow = 'unset';
-      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = "unset";
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen, onClose]);
 
@@ -52,8 +52,12 @@ export function Modal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#F9F5FF] bg-white">
           <div>
-            <h3 className="text-lg font-bold text-[#28262C] font-heading">{title}</h3>
-            {subtitle && <p className="text-xs text-[#28262C]/70 mt-0.5">{subtitle}</p>}
+            <h3 className="text-lg font-bold text-[#28262C] font-heading">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="text-xs text-[#28262C]/70 mt-0.5">{subtitle}</p>
+            )}
           </div>
           <button
             type="button"
@@ -66,7 +70,9 @@ export function Modal({
         </div>
 
         {/* Body */}
-        <div className="p-6 max-h-[calc(85vh-120px)] overflow-y-auto">{children}</div>
+        <div className="p-6 max-h-[calc(85vh-120px)] overflow-y-auto">
+          {children}
+        </div>
       </div>
     </div>
   );

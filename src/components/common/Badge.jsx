@@ -1,14 +1,17 @@
 /**
  * @fileoverview Componente Badge para exibição de status com indicador visual
  */
-import React from 'react';
-import { RESERVATION_STATUS_BADGES, ROOM_STATUS_BADGES } from '../../config/constants.js';
+import React from "react";
+import {
+  RESERVATION_STATUS_BADGES,
+  ROOM_STATUS_BADGES,
+} from "../../config/constants.js";
 
-export function ReservationBadge({ status, className = '' }) {
+export function ReservationBadge({ status, className = "" }) {
   const config = RESERVATION_STATUS_BADGES[status] || {
-    bg: 'bg-slate-100 text-slate-700 border-slate-200',
-    dot: 'bg-slate-500',
-    label: status || 'Desconhecido',
+    bg: "bg-slate-100 text-slate-700 border-slate-200",
+    dot: "bg-slate-500",
+    label: status || "Desconhecido",
   };
 
   return (
@@ -22,11 +25,11 @@ export function ReservationBadge({ status, className = '' }) {
   );
 }
 
-export function RoomStatusBadge({ status, className = '' }) {
+export function RoomStatusBadge({ status, className = "" }) {
   const config = ROOM_STATUS_BADGES[status] || {
-    bg: 'bg-slate-100 text-slate-700 border-slate-200',
-    dot: 'bg-slate-500',
-    label: status || 'Desconhecido',
+    bg: "bg-slate-100 text-slate-700 border-slate-200",
+    dot: "bg-slate-500",
+    label: status || "Desconhecido",
   };
 
   return (
@@ -40,12 +43,12 @@ export function RoomStatusBadge({ status, className = '' }) {
   );
 }
 
-export function Badge({ children, variant = 'default', className = '' }) {
+export function Badge({ children, variant = "default", className = "" }) {
   const variants = {
-    default: 'bg-[#F9F5FF] text-[#28262C] border-[#D4C2FC]',
-    primary: 'bg-[#14248A] text-white border-[#14248A]',
-    purple: 'bg-[#D4C2FC] text-[#28262C] border-[#998FC7]',
-    outline: 'bg-transparent text-[#28262C] border-[#998FC7]/40',
+    default: "bg-[#F9F5FF] text-[#28262C] border-[#D4C2FC]",
+    primary: "bg-[#14248A] text-white border-[#14248A]",
+    purple: "bg-[#D4C2FC] text-[#28262C] border-[#998FC7]",
+    outline: "bg-transparent text-[#28262C] border-[#998FC7]/40",
   };
 
   return (

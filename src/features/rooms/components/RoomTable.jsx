@@ -1,11 +1,11 @@
 /**
  * @fileoverview Tabela densa de quartos para visualização em lista
  */
-import React from 'react';
-import { Sparkles, CheckCircle2, Edit3 } from 'lucide-react';
-import { RoomStatusBadge } from '../../../components/common/Badge.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { ROOM_TYPE_LABELS } from '../../../config/constants.js';
+import React from "react";
+import { Sparkles, CheckCircle2, Edit3 } from "lucide-react";
+import { RoomStatusBadge } from "../../../components/common/Badge.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { ROOM_TYPE_LABELS } from "../../../config/constants.js";
 
 export function RoomTable({ rooms = [], onUpdateStatus, onQuickAction }) {
   return (
@@ -21,16 +21,20 @@ export function RoomTable({ rooms = [], onUpdateStatus, onQuickAction }) {
         </thead>
         <tbody className="divide-y divide-[#F9F5FF]">
           {rooms.map((room) => {
-            const isDirty = room.status === 'dirty';
-            const isCleaning = room.status === 'cleaning';
+            const isDirty = room.status === "dirty";
+            const isCleaning = room.status === "cleaning";
 
             return (
-              <tr key={room.id} className="hover:bg-[#F9F5FF]/80 transition-colors">
+              <tr
+                key={room.id}
+                className="hover:bg-[#F9F5FF]/80 transition-colors"
+              >
                 <td className="py-3.5 px-4 font-bold text-sm text-[#14248A]">
                   Quarto {room.number}
                 </td>
                 <td className="py-3.5 px-4 font-medium text-[#28262C]">
-                  {ROOM_TYPE_LABELS[room.roomType] || room.roomType} ({room.roomType})
+                  {ROOM_TYPE_LABELS[room.roomType] || room.roomType} (
+                  {room.roomType})
                 </td>
                 <td className="py-3.5 px-4">
                   <RoomStatusBadge status={room.status} />
@@ -42,7 +46,7 @@ export function RoomTable({ rooms = [], onUpdateStatus, onQuickAction }) {
                         variant="secondary"
                         size="sm"
                         icon={Sparkles}
-                        onClick={() => onQuickAction(room.id, 'cleaning')}
+                        onClick={() => onQuickAction(room.id, "cleaning")}
                       >
                         Limpar
                       </Button>
@@ -52,7 +56,7 @@ export function RoomTable({ rooms = [], onUpdateStatus, onQuickAction }) {
                         variant="success"
                         size="sm"
                         icon={CheckCircle2}
-                        onClick={() => onQuickAction(room.id, 'available')}
+                        onClick={() => onQuickAction(room.id, "available")}
                       >
                         Liberar
                       </Button>

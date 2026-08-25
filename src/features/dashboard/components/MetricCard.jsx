@@ -1,8 +1,8 @@
 /**
  * @fileoverview Card de métrica operacional com ícone e indicador de variação
  */
-import React from 'react';
-import { Card } from '../../../components/common/Card.jsx';
+import React from "react";
+import { Card } from "../../../components/common/Card.jsx";
 
 export function MetricCard({
   title,
@@ -10,29 +10,29 @@ export function MetricCard({
   subtitle,
   icon: Icon,
   trend,
-  color = 'primary',
+  color = "primary",
   onClick,
 }) {
   const colorStyles = {
     primary: {
-      iconBg: 'bg-[#14248A]/10 text-[#14248A]',
-      border: 'border-[#D4C2FC]/80',
+      iconBg: "bg-[#14248A]/10 text-[#14248A]",
+      border: "border-[#D4C2FC]/80",
     },
     purple: {
-      iconBg: 'bg-[#998FC7]/20 text-[#28262C]',
-      border: 'border-[#998FC7]/40',
+      iconBg: "bg-[#998FC7]/20 text-[#28262C]",
+      border: "border-[#998FC7]/40",
     },
     emerald: {
-      iconBg: 'bg-emerald-100 text-emerald-700',
-      border: 'border-emerald-200',
+      iconBg: "bg-emerald-100 text-emerald-700",
+      border: "border-emerald-200",
     },
     amber: {
-      iconBg: 'bg-amber-100 text-amber-700',
-      border: 'border-amber-200',
+      iconBg: "bg-amber-100 text-amber-700",
+      border: "border-amber-200",
     },
     rose: {
-      iconBg: 'bg-rose-100 text-rose-700',
-      border: 'border-rose-200',
+      iconBg: "bg-rose-100 text-rose-700",
+      border: "border-rose-200",
     },
   };
 
@@ -42,7 +42,7 @@ export function MetricCard({
     <Card
       onClick={onClick}
       className={`p-5 flex flex-col justify-between transition-all hover:shadow-md ${style.border} ${
-        onClick ? 'cursor-pointer hover:border-[#14248A]' : ''
+        onClick ? "cursor-pointer hover:border-[#14248A]" : ""
       }`}
     >
       <div className="flex items-start justify-between">
@@ -54,7 +54,9 @@ export function MetricCard({
             {value}
           </h3>
         </div>
-        <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${style.iconBg} shrink-0`}>
+        <div
+          className={`w-11 h-11 rounded-xl flex items-center justify-center ${style.iconBg} shrink-0`}
+        >
           <Icon className="w-5 h-5" />
         </div>
       </div>

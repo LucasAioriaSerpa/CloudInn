@@ -1,12 +1,20 @@
 /**
  * @fileoverview Modal de detalhes do hóspede com histórico de reservas associadas
  */
-import React from 'react';
-import { User, Mail, Phone, FileText, CalendarDays, Edit3, BedDouble } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { ReservationBadge } from '../../../components/common/Badge.jsx';
-import { useHotel } from '../../../context/HotelContext.jsx';
+import React from "react";
+import {
+  User,
+  Mail,
+  Phone,
+  FileText,
+  CalendarDays,
+  Edit3,
+  BedDouble,
+} from "lucide-react";
+import { Modal } from "../../../components/common/Modal.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { ReservationBadge } from "../../../components/common/Badge.jsx";
+import { useHotel } from "../../../context/HotelContext.jsx";
 
 export function GuestDetailModal({ isOpen, guest, onClose, onEdit }) {
   const { reservations } = useHotel();
@@ -15,7 +23,9 @@ export function GuestDetailModal({ isOpen, guest, onClose, onEdit }) {
 
   // Reservas deste hóspede
   const guestReservations = reservations.filter(
-    (r) => Number(r.guest?.id) === Number(guest.id) || r.guest?.document === guest.document
+    (r) =>
+      Number(r.guest?.id) === Number(guest.id) ||
+      r.guest?.document === guest.document,
   );
 
   return (
@@ -31,11 +41,15 @@ export function GuestDetailModal({ isOpen, guest, onClose, onEdit }) {
         <div className="p-4 rounded-xl bg-[#F9F5FF] border border-[#D4C2FC]/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-[#14248A] text-white flex items-center justify-center text-lg font-bold">
-              {guest.name?.charAt(0).toUpperCase() || 'H'}
+              {guest.name?.charAt(0).toUpperCase() || "H"}
             </div>
             <div>
-              <h3 className="text-base font-bold text-[#28262C]">{guest.name}</h3>
-              <p className="text-xs text-[#28262C]/65">Documento: {guest.document}</p>
+              <h3 className="text-base font-bold text-[#28262C]">
+                {guest.name}
+              </h3>
+              <p className="text-xs text-[#28262C]/65">
+                Documento: {guest.document}
+              </p>
             </div>
           </div>
 
@@ -55,14 +69,18 @@ export function GuestDetailModal({ isOpen, guest, onClose, onEdit }) {
             <Mail className="w-4 h-4 text-[#998FC7]" />
             <div>
               <span className="text-[#28262C]/60 block">E-mail:</span>
-              <span className="font-semibold text-[#28262C]">{guest.email || 'Não informado'}</span>
+              <span className="font-semibold text-[#28262C]">
+                {guest.email || "Não informado"}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-4 h-4 text-[#998FC7]" />
             <div>
               <span className="text-[#28262C]/60 block">Telefone:</span>
-              <span className="font-semibold text-[#28262C]">{guest.phone || 'Não informado'}</span>
+              <span className="font-semibold text-[#28262C]">
+                {guest.phone || "Não informado"}
+              </span>
             </div>
           </div>
         </div>
@@ -86,9 +104,11 @@ export function GuestDetailModal({ isOpen, guest, onClose, onEdit }) {
                   className="p-3 rounded-xl border border-[#D4C2FC]/60 bg-white flex items-center justify-between text-xs"
                 >
                   <div>
-                    <span className="font-bold text-[#14248A]">Reserva #{res.id}</span>
+                    <span className="font-bold text-[#14248A]">
+                      Reserva #{res.id}
+                    </span>
                     <span className="text-[#28262C]/60 ml-2">
-                      Quarto {res.room?.number || '-'} ({res.room?.roomType})
+                      Quarto {res.room?.number || "-"} ({res.room?.roomType})
                     </span>
                   </div>
                   <ReservationBadge status={res.status} />

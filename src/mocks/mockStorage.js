@@ -1,12 +1,16 @@
 /**
  * @fileoverview Gerenciador de persistência local para fallback autônomo e simulações
  */
-import { INITIAL_GUESTS, INITIAL_RESERVATIONS, INITIAL_ROOMS } from './seedData.js';
+import {
+  INITIAL_GUESTS,
+  INITIAL_RESERVATIONS,
+  INITIAL_ROOMS,
+} from "./seedData.js";
 
 const STORAGE_KEYS = {
-  GUESTS: 'cloudinn_guests_v1',
-  ROOMS: 'cloudinn_rooms_v1',
-  RESERVATIONS: 'cloudinn_reservations_v1',
+  GUESTS: "cloudinn_guests_v1",
+  ROOMS: "cloudinn_rooms_v1",
+  RESERVATIONS: "cloudinn_reservations_v1",
 };
 
 class MockStorage {
@@ -22,7 +26,10 @@ class MockStorage {
       localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(INITIAL_ROOMS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.RESERVATIONS)) {
-      localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(INITIAL_RESERVATIONS));
+      localStorage.setItem(
+        STORAGE_KEYS.RESERVATIONS,
+        JSON.stringify(INITIAL_RESERVATIONS),
+      );
     }
   }
 
@@ -41,9 +48,12 @@ class MockStorage {
     const guests = this.getGuests();
     let updated;
     if (guestData.id) {
-      updated = guests.map((g) => (Number(g.id) === Number(guestData.id) ? { ...g, ...guestData } : g));
+      updated = guests.map((g) =>
+        Number(g.id) === Number(guestData.id) ? { ...g, ...guestData } : g,
+      );
     } else {
-      const nextId = guests.length > 0 ? Math.max(...guests.map((g) => g.id || 0)) + 1 : 1;
+      const nextId =
+        guests.length > 0 ? Math.max(...guests.map((g) => g.id || 0)) + 1 : 1;
       const newGuest = { ...guestData, id: nextId };
       updated = [newGuest, ...guests];
       guestData = newGuest;
@@ -54,8 +64,8 @@ class MockStorage {
 
   // Rooms
   getRooms(statusFilter) {
-    const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || '[]');
-    if (statusFilter && statusFilter !== 'all') {
+    const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || "[]");
+    if (statusFilter && statusFilter !== "all") {
       return rooms.filter((r) => r.status === statusFilter);
     }
     return rooms;
@@ -75,7 +85,7 @@ class MockStorage {
       return r;
     });
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(updated));
-    
+
     // Also sync room in active reservations if applicable
     const reservations = this.getReservations();
     const updatedRes = reservations.map((res) => {
@@ -85,13 +95,19 @@ class MockStorage {
       return res;
     });
     localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updatedRes));
-    return { code: 200, type: 'success', message: `Status do quarto atualizado para ${newStatus}` };
+    return {
+      code: 200,
+      type: "success",
+      message: `Status do quarto atualizado para ${newStatus}`,
+    };
   }
 
   // Reservations
   getReservations(statusFilter) {
-    const list = JSON.parse(localStorage.getItem(STORAGE_KEYS.RESERVATIONS) || '[]');
-    if (statusFilter && statusFilter !== 'all') {
+    const list = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.RESERVATIONS) || "[]",
+    );
+    if (statusFilter && statusFilter !== "all") {
       return list.filter((r) => r.status === statusFilter);
     }
     return list;
@@ -104,17 +120,20 @@ class MockStorage {
 
   createReservation(reservationData) {
     const reservations = this.getReservations();
-    const nextId = reservations.length > 0 ? Math.max(...reservations.map((r) => r.id || 0)) + 1 : 1001;
-    
+    const nextId =
+      reservations.length > 0
+        ? Math.max(...reservations.map((r) => r.id || 0)) + 1
+        : 1001;
+
     // Ensure room is set to reserved if currently available
     if (reservationData.room && reservationData.room.id) {
-      this.updateRoomStatus(reservationData.room.id, 'reserved');
+      this.updateRoomStatus(reservationData.room.id, "reserved");
     }
 
     const newRes = {
       ...reservationData,
       id: nextId,
-      status: reservationData.status || 'pending',
+      status: reservationData.status || "pending",
     };
     const updated = [newRes, ...reservations];
     localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updated));
@@ -123,44 +142,65 @@ class MockStorage {
 
   registerCheckIn(reservationId) {
     const reservations = this.getReservations();
-    const reservation = reservations.find((r) => Number(r.id) === Number(reservationId));
+    const reservation = reservations.find(
+      (r) => Number(r.id) === Number(reservationId),
+    );
     if (!reservation) {
-      throw new Error('Reserva não encontrada');
-    }
-    
-    // RF07: Altera status da reserva para active e quarto para occupied
-    reservation.status = 'active';
-    if (reservation.room?.id) {
-      this.updateRoomStatus(reservation.room.id, 'occupied');
-      reservation.room.status = 'occupied';
+      throw new Error("Reserva não encontrada");
     }
 
-    localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
-    return { code: 200, type: 'success', message: 'Check-in realizado com sucesso' };
+    // RF07: Altera status da reserva para active e quarto para occupied
+    reservation.status = "active";
+    if (reservation.room?.id) {
+      this.updateRoomStatus(reservation.room.id, "occupied");
+      reservation.room.status = "occupied";
+    }
+
+    localStorage.setItem(
+      STORAGE_KEYS.RESERVATIONS,
+      JSON.stringify(reservations),
+    );
+    return {
+      code: 200,
+      type: "success",
+      message: "Check-in realizado com sucesso",
+    };
   }
 
   registerCheckOut(reservationId) {
     const reservations = this.getReservations();
-    const reservation = reservations.find((r) => Number(r.id) === Number(reservationId));
+    const reservation = reservations.find(
+      (r) => Number(r.id) === Number(reservationId),
+    );
     if (!reservation) {
-      throw new Error('Reserva não encontrada');
-    }
-    
-    // RF08 & RF09: Altera status da reserva para completed e quarto para dirty
-    reservation.status = 'completed';
-    if (reservation.room?.id) {
-      this.updateRoomStatus(reservation.room.id, 'dirty');
-      reservation.room.status = 'dirty';
+      throw new Error("Reserva não encontrada");
     }
 
-    localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(reservations));
-    return { code: 200, type: 'success', message: 'Check-out realizado com sucesso e quarto marcado como sujo' };
+    // RF08 & RF09: Altera status da reserva para completed e quarto para dirty
+    reservation.status = "completed";
+    if (reservation.room?.id) {
+      this.updateRoomStatus(reservation.room.id, "dirty");
+      reservation.room.status = "dirty";
+    }
+
+    localStorage.setItem(
+      STORAGE_KEYS.RESERVATIONS,
+      JSON.stringify(reservations),
+    );
+    return {
+      code: 200,
+      type: "success",
+      message: "Check-out realizado com sucesso e quarto marcado como sujo",
+    };
   }
 
   resetToDefault() {
     localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(INITIAL_GUESTS));
     localStorage.setItem(STORAGE_KEYS.ROOMS, JSON.stringify(INITIAL_ROOMS));
-    localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(INITIAL_RESERVATIONS));
+    localStorage.setItem(
+      STORAGE_KEYS.RESERVATIONS,
+      JSON.stringify(INITIAL_RESERVATIONS),
+    );
   }
 }
 

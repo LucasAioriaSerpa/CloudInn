@@ -1,9 +1,9 @@
 /**
  * @fileoverview Tabela de listagem de hóspedes com busca e ações
  */
-import React from 'react';
-import { Eye, Edit3, User, Mail, Phone } from 'lucide-react';
-import { Button } from '../../../components/common/Button.jsx';
+import React from "react";
+import { Eye, Edit3, User, Mail, Phone } from "lucide-react";
+import { Button } from "../../../components/common/Button.jsx";
 
 export function GuestTable({ guests = [], onViewDetails, onEditGuest }) {
   return (
@@ -21,26 +21,29 @@ export function GuestTable({ guests = [], onViewDetails, onEditGuest }) {
         </thead>
         <tbody className="divide-y divide-[#F9F5FF]">
           {guests.map((guest) => (
-            <tr key={guest.id} className="hover:bg-[#F9F5FF]/80 transition-colors">
+            <tr
+              key={guest.id}
+              className="hover:bg-[#F9F5FF]/80 transition-colors"
+            >
               <td className="py-3.5 px-4 font-mono font-bold text-[#14248A]">
                 #{guest.id}
               </td>
               <td className="py-3.5 px-4 font-bold text-[#28262C]">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-[#D4C2FC] text-[#28262C] flex items-center justify-center font-bold text-xs shrink-0">
-                    {guest.name?.charAt(0).toUpperCase() || 'H'}
+                    {guest.name?.charAt(0).toUpperCase() || "H"}
                   </div>
                   <span>{guest.name}</span>
                 </div>
               </td>
               <td className="py-3.5 px-4 font-medium text-[#28262C]">
-                {guest.document || '-'}
+                {guest.document || "-"}
               </td>
               <td className="py-3.5 px-4 text-[#28262C]/70">
-                {guest.email || '-'}
+                {guest.email || "-"}
               </td>
               <td className="py-3.5 px-4 text-[#28262C]/70">
-                {guest.phone || '-'}
+                {guest.phone || "-"}
               </td>
               <td className="py-3.5 px-4 text-right">
                 <div className="flex items-center justify-end gap-1.5">

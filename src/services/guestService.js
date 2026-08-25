@@ -1,8 +1,8 @@
 /**
  * @fileoverview Serviço de Hóspedes em conformidade com o Swagger e arc42 (RF02)
  */
-import { apiClient } from './apiClient.js';
-import { mockStorage } from '../mocks/mockStorage.js';
+import { apiClient } from "./apiClient.js";
+import { mockStorage } from "../mocks/mockStorage.js";
 
 export const guestService = {
   /**
@@ -39,7 +39,7 @@ export const guestService = {
    */
   async createGuest(guestData) {
     try {
-      const res = await apiClient.post('/guest', guestData);
+      const res = await apiClient.post("/guest", guestData);
       const saved = mockStorage.saveGuest(guestData);
       return res || saved;
     } catch {
@@ -58,10 +58,10 @@ export const guestService = {
     try {
       const res = await apiClient.put(`/guest/${guestId}`, guestData);
       mockStorage.saveGuest({ ...guestData, id: guestId });
-      return res || { code: 200, message: 'Hóspede atualizado com sucesso' };
+      return res || { code: 200, message: "Hóspede atualizado com sucesso" };
     } catch {
       mockStorage.saveGuest({ ...guestData, id: guestId });
-      return { code: 200, message: 'Hóspede atualizado com sucesso' };
+      return { code: 200, message: "Hóspede atualizado com sucesso" };
     }
   },
 };

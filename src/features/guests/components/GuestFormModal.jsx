@@ -1,12 +1,12 @@
 /**
  * @fileoverview Modal para Cadastro e Edição de Hóspedes (RF02 - POST /guest, PUT /guest/{guestId})
  */
-import React, { useState, useEffect } from 'react';
-import { User, Plus, Edit3, Mail, Phone, FileText } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { Input } from '../../../components/common/Input.jsx';
-import { useHotel } from '../../../context/HotelContext.jsx';
+import React, { useState, useEffect } from "react";
+import { User, Plus, Edit3, Mail, Phone, FileText } from "lucide-react";
+import { Modal } from "../../../components/common/Modal.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { Input } from "../../../components/common/Input.jsx";
+import { useHotel } from "../../../context/HotelContext.jsx";
 
 export function GuestFormModal({ isOpen, guest, onClose }) {
   const { handleCreateGuest, handleUpdateGuest } = useHotel();
@@ -14,44 +14,44 @@ export function GuestFormModal({ isOpen, guest, onClose }) {
   const isEditing = !!guest?.id;
 
   const [formData, setFormData] = useState({
-    name: '',
-    document: '',
-    email: '',
-    phone: '',
+    name: "",
+    document: "",
+    email: "",
+    phone: "",
   });
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (guest) {
       setFormData({
-        name: guest.name || '',
-        document: guest.document || '',
-        email: guest.email || '',
-        phone: guest.phone || '',
+        name: guest.name || "",
+        document: guest.document || "",
+        email: guest.email || "",
+        phone: guest.phone || "",
       });
     } else {
       setFormData({
-        name: '',
-        document: '',
-        email: '',
-        phone: '',
+        name: "",
+        document: "",
+        email: "",
+        phone: "",
       });
     }
   }, [guest, isOpen]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (!formData.name.trim()) {
-      setError('O nome do hóspede é obrigatório.');
+      setError("O nome do hóspede é obrigatório.");
       return;
     }
 
     if (!formData.document.trim()) {
-      setError('O documento (CPF ou Passaporte) é obrigatório.');
+      setError("O documento (CPF ou Passaporte) é obrigatório.");
       return;
     }
 
@@ -70,7 +70,7 @@ export function GuestFormModal({ isOpen, guest, onClose }) {
         }
       }
     } catch (err) {
-      setError(err.message || 'Erro ao salvar hóspede.');
+      setError(err.message || "Erro ao salvar hóspede.");
     } finally {
       setLoading(false);
     }
@@ -80,7 +80,9 @@ export function GuestFormModal({ isOpen, guest, onClose }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? `Editar Hóspede #${guest.id}` : 'Cadastrar Novo Hóspede'}
+      title={
+        isEditing ? `Editar Hóspede #${guest.id}` : "Cadastrar Novo Hóspede"
+      }
       subtitle="Cadastro de identificação conforme Swagger (POST /guest, PUT /guest/{id})"
       maxWidth="max-w-md"
     >
@@ -104,7 +106,9 @@ export function GuestFormModal({ isOpen, guest, onClose }) {
           label="Documento de Identificação (CPF / Passaporte)"
           name="document"
           value={formData.document}
-          onChange={(e) => setFormData({ ...formData, document: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, document: e.target.value })
+          }
           placeholder="Ex: 123.456.789-00 ou PASS-BR12345"
           required
           helperText="Campo obrigatório para registro no hotel (RF02)."
@@ -137,7 +141,7 @@ export function GuestFormModal({ isOpen, guest, onClose }) {
             icon={isEditing ? Edit3 : Plus}
             loading={loading}
           >
-            {isEditing ? 'Salvar Alterações' : 'Cadastrar Hóspede'}
+            {isEditing ? "Salvar Alterações" : "Cadastrar Hóspede"}
           </Button>
         </div>
       </form>

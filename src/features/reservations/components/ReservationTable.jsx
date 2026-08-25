@@ -1,11 +1,11 @@
 /**
  * @fileoverview Tabela completa de reservas com filtros, busca e ações operacionais
  */
-import React from 'react';
-import { LogIn, LogOut, Eye, User, Calendar, BedDouble } from 'lucide-react';
-import { ReservationBadge } from '../../../components/common/Badge.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { ROOM_TYPE_LABELS } from '../../../config/constants.js';
+import React from "react";
+import { LogIn, LogOut, Eye, User, Calendar, BedDouble } from "lucide-react";
+import { ReservationBadge } from "../../../components/common/Badge.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { ROOM_TYPE_LABELS } from "../../../config/constants.js";
 
 export function ReservationTable({
   reservations = [],
@@ -14,10 +14,14 @@ export function ReservationTable({
   onViewDetails,
 }) {
   const formatDate = (iso) => {
-    if (!iso) return '-';
+    if (!iso) return "-";
     try {
       const d = new Date(iso);
-      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return d.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
     } catch {
       return iso;
     }
@@ -39,8 +43,8 @@ export function ReservationTable({
         </thead>
         <tbody className="divide-y divide-[#F9F5FF]">
           {reservations.map((res) => {
-            const isPending = res.status === 'pending';
-            const isActive = res.status === 'active';
+            const isPending = res.status === "pending";
+            const isActive = res.status === "active";
 
             return (
               <tr
@@ -56,14 +60,16 @@ export function ReservationTable({
                 <td className="py-3.5 px-4">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-[#D4C2FC] text-[#28262C] flex items-center justify-center font-bold text-xs shrink-0">
-                      {res.guest?.name ? res.guest.name.charAt(0).toUpperCase() : 'H'}
+                      {res.guest?.name
+                        ? res.guest.name.charAt(0).toUpperCase()
+                        : "H"}
                     </div>
                     <div className="min-w-0">
                       <p className="font-bold text-[#28262C] truncate">
-                        {res.guest?.name || 'Hóspede não informado'}
+                        {res.guest?.name || "Hóspede não informado"}
                       </p>
                       <p className="text-[11px] text-[#28262C]/60 truncate">
-                        Doc: {res.guest?.document || 'Sem documento'}
+                        Doc: {res.guest?.document || "Sem documento"}
                       </p>
                     </div>
                   </div>
@@ -73,10 +79,14 @@ export function ReservationTable({
                 <td className="py-3.5 px-4">
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-[#14248A] bg-[#14248A]/10 px-2 py-0.5 rounded-md text-xs">
-                      {res.room?.number || '-'}
+                      {res.room?.number || "-"}
                     </span>
                     <span className="text-xs text-[#28262C]/60">
-                      ({ROOM_TYPE_LABELS[res.room?.roomType] || res.room?.roomType || '-'})
+                      (
+                      {ROOM_TYPE_LABELS[res.room?.roomType] ||
+                        res.room?.roomType ||
+                        "-"}
+                      )
                     </span>
                   </div>
                 </td>

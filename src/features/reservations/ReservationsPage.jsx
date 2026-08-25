@@ -1,26 +1,26 @@
 /**
  * @fileoverview Página Principal de Gerenciamento de Reservas (RF01, RF03, RF04, RF05, RF07, RF08)
  */
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, Filter, CalendarDays, RefreshCw } from 'lucide-react';
-import { useHotel } from '../../context/HotelContext.jsx';
-import { ReservationTable } from './components/ReservationTable.jsx';
-import { ReservationFormModal } from './components/ReservationFormModal.jsx';
-import { ReservationDetailModal } from './components/ReservationDetailModal.jsx';
-import { CheckInModal } from './components/CheckInModal.jsx';
-import { CheckOutModal } from './components/CheckOutModal.jsx';
-import { Button } from '../../components/common/Button.jsx';
-import { Input } from '../../components/common/Input.jsx';
-import { EmptyState } from '../../components/common/EmptyState.jsx';
-import { LoadingState } from '../../components/common/LoadingState.jsx';
-import { RESERVATION_STATUS } from '../../config/constants.js';
+import React, { useState, useMemo } from "react";
+import { Plus, Search, Filter, CalendarDays, RefreshCw } from "lucide-react";
+import { useHotel } from "../../context/HotelContext.jsx";
+import { ReservationTable } from "./components/ReservationTable.jsx";
+import { ReservationFormModal } from "./components/ReservationFormModal.jsx";
+import { ReservationDetailModal } from "./components/ReservationDetailModal.jsx";
+import { CheckInModal } from "./components/CheckInModal.jsx";
+import { CheckOutModal } from "./components/CheckOutModal.jsx";
+import { Button } from "../../components/common/Button.jsx";
+import { Input } from "../../components/common/Input.jsx";
+import { EmptyState } from "../../components/common/EmptyState.jsx";
+import { LoadingState } from "../../components/common/LoadingState.jsx";
+import { RESERVATION_STATUS } from "../../config/constants.js";
 
 export function ReservationsPage() {
   const { reservations, loading, refreshData } = useHotel();
 
   // Search & Filter state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -30,26 +30,32 @@ export function ReservationsPage() {
 
   // Tabs for status filtering
   const tabs = [
-    { id: 'all', label: 'Todas as Reservas', count: reservations.length },
+    { id: "all", label: "Todas as Reservas", count: reservations.length },
     {
       id: RESERVATION_STATUS.PENDING,
-      label: 'Pendentes',
-      count: reservations.filter((r) => r.status === RESERVATION_STATUS.PENDING).length,
+      label: "Pendentes",
+      count: reservations.filter((r) => r.status === RESERVATION_STATUS.PENDING)
+        .length,
     },
     {
       id: RESERVATION_STATUS.ACTIVE,
-      label: 'Ativas (Hospedados)',
-      count: reservations.filter((r) => r.status === RESERVATION_STATUS.ACTIVE).length,
+      label: "Ativas (Hospedados)",
+      count: reservations.filter((r) => r.status === RESERVATION_STATUS.ACTIVE)
+        .length,
     },
     {
       id: RESERVATION_STATUS.COMPLETED,
-      label: 'Concluídas',
-      count: reservations.filter((r) => r.status === RESERVATION_STATUS.COMPLETED).length,
+      label: "Concluídas",
+      count: reservations.filter(
+        (r) => r.status === RESERVATION_STATUS.COMPLETED,
+      ).length,
     },
     {
       id: RESERVATION_STATUS.CANCELLED,
-      label: 'Canceladas',
-      count: reservations.filter((r) => r.status === RESERVATION_STATUS.CANCELLED).length,
+      label: "Canceladas",
+      count: reservations.filter(
+        (r) => r.status === RESERVATION_STATUS.CANCELLED,
+      ).length,
     },
   ];
 
@@ -57,7 +63,7 @@ export function ReservationsPage() {
   const filteredReservations = useMemo(() => {
     return reservations.filter((res) => {
       // Filter by status tab
-      if (statusFilter !== 'all' && res.status !== statusFilter) {
+      if (statusFilter !== "all" && res.status !== statusFilter) {
         return false;
       }
       // Search term (name, doc, room, id)
@@ -82,7 +88,8 @@ export function ReservationsPage() {
             Gestão de Reservas
           </h2>
           <p className="text-xs sm:text-sm text-[#28262C]/65 mt-0.5">
-            Controle de estadias, confirmação de entradas e liberação de check-outs
+            Controle de estadias, confirmação de entradas e liberação de
+            check-outs
           </p>
         </div>
 
@@ -116,16 +123,18 @@ export function ReservationsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-[2px] flex items-center gap-2 ${
+                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-\[2px\] flex items-center gap-2 ${
                   isActive
-                    ? 'border-[#14248A] text-[#14248A] bg-white'
-                    : 'border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50'
+                    ? "border-[#14248A] text-[#14248A] bg-white"
+                    : "border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50"
                 }`}
               >
                 <span>{tab.label}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full ${
-                    isActive ? 'bg-[#14248A] text-white' : 'bg-[#D4C2FC]/60 text-[#28262C]'
+                    isActive
+                      ? "bg-[#14248A] text-white"
+                      : "bg-[#D4C2FC]/60 text-[#28262C]"
                   }`}
                 >
                   {tab.count}
@@ -147,7 +156,7 @@ export function ReservationsPage() {
           </div>
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchTerm("")}
               className="text-xs text-[#14248A] font-semibold hover:underline"
             >
               Limpar busca
@@ -164,9 +173,9 @@ export function ReservationsPage() {
           icon={CalendarDays}
           title="Nenhuma reserva encontrada"
           description={
-            searchTerm || statusFilter !== 'all'
-              ? 'Tente ajustar os filtros ou o termo de busca pesquisado.'
-              : 'Comece criando a primeira reserva ou simulando uma entrada de parceiro.'
+            searchTerm || statusFilter !== "all"
+              ? "Tente ajustar os filtros ou o termo de busca pesquisado."
+              : "Comece criando a primeira reserva ou simulando uma entrada de parceiro."
           }
           actionLabel="Cadastrar Nova Reserva"
           onAction={() => setIsFormOpen(true)}

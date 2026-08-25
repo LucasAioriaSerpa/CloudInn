@@ -1,18 +1,22 @@
 /**
  * @fileoverview Modal para atualização de status de quartos (RF06, RF10, RF11)
  */
-import React, { useState, useEffect } from 'react';
-import { BedDouble, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Modal } from '../../../components/common/Modal.jsx';
-import { Button } from '../../../components/common/Button.jsx';
-import { Select } from '../../../components/common/Select.jsx';
-import { RoomStatusBadge } from '../../../components/common/Badge.jsx';
-import { useHotel } from '../../../context/HotelContext.jsx';
-import { ROOM_STATUS, ROOM_STATUS_LABELS, ROOM_TYPE_LABELS } from '../../../config/constants.js';
+import React, { useState, useEffect } from "react";
+import { BedDouble, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Modal } from "../../../components/common/Modal.jsx";
+import { Button } from "../../../components/common/Button.jsx";
+import { Select } from "../../../components/common/Select.jsx";
+import { RoomStatusBadge } from "../../../components/common/Badge.jsx";
+import { useHotel } from "../../../context/HotelContext.jsx";
+import {
+  ROOM_STATUS,
+  ROOM_STATUS_LABELS,
+  ROOM_TYPE_LABELS,
+} from "../../../config/constants.js";
 
 export function RoomStatusModal({ isOpen, room, onClose }) {
   const { handleUpdateRoomStatus } = useHotel();
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -67,29 +71,33 @@ export function RoomStatusModal({ isOpen, room, onClose }) {
         />
 
         {/* Contextual guidance */}
-        {selectedStatus === 'cleaning' && (
+        {selectedStatus === "cleaning" && (
           <div className="p-3 bg-sky-50 rounded-xl border border-sky-200 text-xs text-sky-900 flex items-start gap-2">
             <Sparkles className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Governança (RF10):</strong> Quarto marcado como "Em Limpeza". A equipe de governança está higienizando as dependências.
+              <strong>Governança (RF10):</strong> Quarto marcado como "Em
+              Limpeza". A equipe de governança está higienizando as
+              dependências.
             </div>
           </div>
         )}
 
-        {selectedStatus === 'available' && (
+        {selectedStatus === "available" && (
           <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-900 flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Disponibilização (RF11):</strong> Quarto liberado e pronto para receber novas reservas ou check-in imediato.
+              <strong>Disponibilização (RF11):</strong> Quarto liberado e pronto
+              para receber novas reservas ou check-in imediato.
             </div>
           </div>
         )}
 
-        {selectedStatus === 'dirty' && (
+        {selectedStatus === "dirty" && (
           <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-900 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
             <div>
-              <strong>Atenção:</strong> Quarto aguarda higienização antes de poder ser ocupado.
+              <strong>Atenção:</strong> Quarto aguarda higienização antes de
+              poder ser ocupado.
             </div>
           </div>
         )}
@@ -99,11 +107,7 @@ export function RoomStatusModal({ isOpen, room, onClose }) {
           <Button variant="outline" onClick={onClose} disabled={submitting}>
             Cancelar
           </Button>
-          <Button
-            type="submit"
-            variant="primary"
-            loading={submitting}
-          >
+          <Button type="submit" variant="primary" loading={submitting}>
             Salvar Status
           </Button>
         </div>

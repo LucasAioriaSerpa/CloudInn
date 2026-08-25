@@ -10,6 +10,7 @@ export const roomService = {
    * GET /room?status={available|reserved|occupied|dirty|cleaning}
    * @param {string} [status]
    * @returns {Promise<Array>}
+   *
    */
   async getRooms(status) {
     try {

@@ -1,21 +1,21 @@
 /**
  * @fileoverview Página de Gestão de Hóspedes (RF02)
  */
-import React, { useState, useMemo } from 'react';
-import { Plus, Search, Users, RefreshCw, UserCheck } from 'lucide-react';
-import { useHotel } from '../../context/HotelContext.jsx';
-import { GuestTable } from './components/GuestTable.jsx';
-import { GuestFormModal } from './components/GuestFormModal.jsx';
-import { GuestDetailModal } from './components/GuestDetailModal.jsx';
-import { Button } from '../../components/common/Button.jsx';
-import { Input } from '../../components/common/Input.jsx';
-import { EmptyState } from '../../components/common/EmptyState.jsx';
-import { LoadingState } from '../../components/common/LoadingState.jsx';
+import React, { useState, useMemo } from "react";
+import { Plus, Search, Users, RefreshCw, UserCheck } from "lucide-react";
+import { useHotel } from "../../context/HotelContext.jsx";
+import { GuestTable } from "./components/GuestTable.jsx";
+import { GuestFormModal } from "./components/GuestFormModal.jsx";
+import { GuestDetailModal } from "./components/GuestDetailModal.jsx";
+import { Button } from "../../components/common/Button.jsx";
+import { Input } from "../../components/common/Input.jsx";
+import { EmptyState } from "../../components/common/EmptyState.jsx";
+import { LoadingState } from "../../components/common/LoadingState.jsx";
 
 export function GuestsPage() {
   const { guests, loading, refreshData } = useHotel();
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedGuestForEdit, setSelectedGuestForEdit] = useState(null);
   const [selectedGuestForDetail, setSelectedGuestForDetail] = useState(null);
   const [isNewGuestOpen, setIsNewGuestOpen] = useState(false);
@@ -30,7 +30,7 @@ export function GuestsPage() {
         g.document?.toLowerCase().includes(q) ||
         g.email?.toLowerCase().includes(q) ||
         g.phone?.toLowerCase().includes(q) ||
-        String(g.id).includes(q)
+        String(g.id).includes(q),
     );
   }, [guests, searchTerm]);
 
@@ -78,7 +78,7 @@ export function GuestsPage() {
         </div>
         {searchTerm && (
           <button
-            onClick={() => setSearchTerm('')}
+            onClick={() => setSearchTerm("")}
             className="text-xs text-[#14248A] font-semibold hover:underline"
           >
             Limpar busca
@@ -95,8 +95,8 @@ export function GuestsPage() {
           title="Nenhum hóspede encontrado"
           description={
             searchTerm
-              ? 'Nenhum resultado corresponde à sua pesquisa.'
-              : 'Nenhum hóspede cadastrado no sistema.'
+              ? "Nenhum resultado corresponde à sua pesquisa."
+              : "Nenhum hóspede cadastrado no sistema."
           }
           actionLabel="Cadastrar Novo Hóspede"
           onAction={() => setIsNewGuestOpen(true)}

@@ -1,9 +1,9 @@
 /**
  * @fileoverview Header institucional do CloudInn com identidade visual, data operacional e ações
  */
-import React from 'react';
-import { Calendar, Bell, Radio, Code2, Menu } from 'lucide-react';
-import { Button } from '../common/Button.jsx';
+import React from "react";
+import { Calendar, Bell, Radio, Code2, Menu } from "lucide-react";
+import { Button } from "../common/Button.jsx";
 
 export function Header({
   activeRoute,
@@ -12,13 +12,28 @@ export function Header({
   onOpenApiExplorer,
 }) {
   const titles = {
-    '/': { title: 'Visão Geral & Recepção', subtitle: 'Painel operacional e monitoramento de quartos em tempo real' },
-    '/reservas': { title: 'Gestão de Reservas', subtitle: 'Listagem, check-ins, check-outs e novas reservas' },
-    '/quartos': { title: 'Quartos & Governança', subtitle: 'Controle de disponibilidade, ocupação e fluxo de limpeza' },
-    '/hospedes': { title: 'Diretório de Hóspedes', subtitle: 'Cadastro, histórico e dados de contato dos hóspedes' },
+    "/": {
+      title: "Visão Geral & Recepção",
+      subtitle: "Painel operacional e monitoramento de quartos em tempo real",
+    },
+    "/reservas": {
+      title: "Gestão de Reservas",
+      subtitle: "Listagem, check-ins, check-outs e novas reservas",
+    },
+    "/quartos": {
+      title: "Quartos & Governança",
+      subtitle: "Controle de disponibilidade, ocupação e fluxo de limpeza",
+    },
+    "/hospedes": {
+      title: "Diretório de Hóspedes",
+      subtitle: "Cadastro, histórico e dados de contato dos hóspedes",
+    },
   };
 
-  const current = titles[activeRoute] || { title: 'CloudInn Hotel', subtitle: 'Sistema Interno' };
+  const current = titles[activeRoute] || {
+    title: "CloudInn Hotel",
+    subtitle: "Sistema Interno",
+  };
 
   return (
     <header className="bg-white border-b border-[#D4C2FC]/50 sticky top-0 z-30 px-4 sm:px-6 py-3.5">
@@ -81,8 +96,12 @@ export function Header({
               RC
             </div>
             <div className="hidden xl:block text-left">
-              <p className="text-xs font-bold text-[#28262C] leading-none">Recepção Central</p>
-              <p className="text-[10px] text-[#28262C]/60 mt-0.5">Operador CloudInn</p>
+              <p className="text-xs font-bold text-[#28262C] leading-none">
+                Recepção Central
+              </p>
+              <p className="text-[10px] text-[#28262C]/60 mt-0.5">
+                Operador CloudInn
+              </p>
             </div>
           </div>
         </div>

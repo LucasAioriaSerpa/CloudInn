@@ -1,8 +1,8 @@
 /**
  * @fileoverview Serviço de Reservas em conformidade com o Swagger e arc42 (RF01, RF03, RF04, RF05, RF07, RF08, RF09)
  */
-import { apiClient } from './apiClient.js';
-import { mockStorage } from '../mocks/mockStorage.js';
+import { apiClient } from "./apiClient.js";
+import { mockStorage } from "../mocks/mockStorage.js";
 
 export const reservationService = {
   /**
@@ -13,7 +13,7 @@ export const reservationService = {
    */
   async getReservations(status) {
     try {
-      const data = await apiClient.get('/reservation', { status });
+      const data = await apiClient.get("/reservation", { status });
       if (Array.isArray(data)) {
         return data;
       }
@@ -50,7 +50,7 @@ export const reservationService = {
    */
   async createReservation(reservationData) {
     try {
-      const result = await apiClient.post('/reservation', reservationData);
+      const result = await apiClient.post("/reservation", reservationData);
       // Sincroniza localmente
       mockStorage.createReservation(reservationData);
       return result || reservationData;
@@ -83,7 +83,9 @@ export const reservationService = {
    */
   async registerCheckOut(reservationId) {
     try {
-      const res = await apiClient.post(`/reservation/${reservationId}/checkout`);
+      const res = await apiClient.post(
+        `/reservation/${reservationId}/checkout`,
+      );
       mockStorage.registerCheckOut(reservationId);
       return res;
     } catch {
