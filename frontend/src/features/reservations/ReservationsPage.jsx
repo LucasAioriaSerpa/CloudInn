@@ -123,7 +123,7 @@ export function ReservationsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-\[2px\] flex items-center gap-2 ${
+                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-[2px] flex items-center gap-2 ${
                   isActive
                     ? "border-[#14248A] text-[#14248A] bg-white"
                     : "border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50"

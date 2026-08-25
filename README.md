@@ -162,7 +162,7 @@ Principais tecnologias utilizadas:
 - ![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=flat-square&logo=html5&logoColor=white) HTML5;
 - ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) CSS3;
 - REST API;
-- Swagger / OpenAPI.
+- ![Swagger](https://img.shields.io/badge/Swagger-%2385EA2D.svg?style=for-the-badge&logo=swagger&logoColor=black) Swagger / OpenAPI.
 
 > A implementação do frontend deve utilizar **JavaScript (`.js` / `.jsx`)**, sem TypeScript.
 

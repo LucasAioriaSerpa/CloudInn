@@ -63,7 +63,7 @@ export function Sidebar({
           className="flex items-center gap-3 cursor-pointer"
           onClick={() => onNavigate(ROUTES.DASHBOARD)}
         >
-          <div className="w-10 h-10 rounded-xl .bg-gradient-to-br from-[#14248A] to-[#998FC7] flex items-center justify-center text-white shadow-md">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#14248A] to-[#998FC7] flex items-center justify-center text-white shadow-md">
             <Hotel className="w-5 h-5" />
           </div>
           <div>

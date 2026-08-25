@@ -149,7 +149,7 @@ export function RoomsPage() {
 
       {/* Housekeeping Flow Banner (if dirty/cleaning rooms exist) */}
       {(dirtyCount > 0 || cleaningCount > 0) && (
-        <div className="p-4 rounded-xl .bg-gradient-to-r from-[#D4C2FC]/40 via-white to-white border border-[#998FC7]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+        <div className="p-4 rounded-xl bg-gradient-to-r from-[#D4C2FC]/40 via-white to-white border border-[#998FC7]/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[#14248A] text-white flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5" />
@@ -184,7 +184,7 @@ export function RoomsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-\[2px\] flex items-center gap-2 ${
+                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-[2px] flex items-center gap-2 ${
                   isActive
                     ? "border-[#14248A] text-[#14248A] bg-white"
                     : "border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50"

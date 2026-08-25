@@ -49,7 +49,7 @@ export function DashboardPage({ onNavigate }) {
   return (
     <div className="space-y-6">
       {/* Top Banner with Quick Actions */}
-      <div className=".bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div className="bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#D4C2FC] text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5 text-[#D4C2FC]" />
