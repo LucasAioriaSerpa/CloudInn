@@ -53,9 +53,13 @@ O CloudInn busca:
 
 ---
 
-## Fontes de verdade
+## Endereço da aplicação
 
-Durante o desenvolvimento, cada artefato deve ser utilizado de acordo com sua responsabilidade.
+[CloudInn](https://www.youtube.com/watch?v=hPr-Yc92qaY)
+
+---
+
+## Fontes de verdade
 
 ### `swagger.yaml`
 
@@ -78,8 +82,6 @@ Ele determina:
 - campos obrigatórios;
 - campos opcionais;
 - formatos esperados pela API.
-
-> Caso exista alguma divergência entre o mock e o Swagger relacionada aos dados ou ao funcionamento da API, **o Swagger prevalece**.
 
 ---
 
@@ -104,8 +106,6 @@ O mock orienta:
 - ações disponíveis;
 - organização das páginas;
 - comportamento esperado da interface.
-
-> O mock não deve ser utilizado para inventar endpoints, campos ou estruturas que não estejam especificados no `swagger.yaml`.
 
 ---
 
@@ -163,8 +163,6 @@ Principais tecnologias utilizadas:
 - ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white) CSS3;
 - REST API;
 - ![Swagger](https://img.shields.io/badge/Swagger-%2385EA2D.svg?style=for-the-badge&logo=swagger&logoColor=black) Swagger / OpenAPI.
-
-> A implementação do frontend deve utilizar **JavaScript (`.js` / `.jsx`)**, sem TypeScript.
 
 ---
 
@@ -301,8 +299,6 @@ export async function getReservations() {
 }
 ```
 
-> O exemplo demonstra apenas a organização esperada. Endpoints, parâmetros, métodos e estruturas reais devem seguir exclusivamente o `swagger.yaml`.
-
 ---
 
 ## Variáveis de ambiente
@@ -326,8 +322,6 @@ Um arquivo `.env.example` pode ser disponibilizado no repositório para document
 ```env
 VITE_API_URL=
 ```
-
-> Arquivos `.env` contendo configurações locais ou informações sensíveis não devem ser enviados ao Git.
 
 ---
 
@@ -432,8 +426,6 @@ npm run dev
 npm run build
 ```
 
-> Os scripts oficialmente disponíveis no projeto devem sempre ser conferidos no arquivo `package.json`.
-
 ---
 
 ## Git e fluxo de contribuição
@@ -500,12 +492,6 @@ git commit -m "feat: adiciona cadastro de reservas"
 - [Flavia Cristina Fagundes](https://github.com/flaviacfagundes)
 - [Lucas Aioria Serpa](https://github.com/LucasAioriaSerpa)
 - [Matheus Pereira Siqueira](https://github.com/MatheusP19)
-
----
-
-## Endereço da aplicação
-
-[CloudInn](https://www.youtube.com/watch?v=hPr-Yc92qaY)
 
 ---
 
