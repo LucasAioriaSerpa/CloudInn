@@ -22,6 +22,12 @@ Aplicação web desenvolvida para centralizar e simplificar processos de gestão
 
 ---
 
+## Endereço da site
+
+[CloudInn](https://www.youtube.com/watch?v=hPr-Yc92qaY)
+
+---
+
 ## Sobre o projeto
 
 O **CloudInn** é um sistema web voltado à **gestão hoteleira**, desenvolvido para oferecer uma experiência centralizada, intuitiva e organizada para operações relacionadas ao ambiente de hospedagem.
@@ -50,12 +56,6 @@ O CloudInn busca:
 - manter regras de integração separadas da camada visual;
 - fornecer feedback adequado durante operações assíncronas;
 - oferecer uma experiência responsiva em diferentes dispositivos.
-
----
-
-## Endereço da aplicação
-
-[CloudInn](https://www.youtube.com/watch?v=hPr-Yc92qaY)
 
 ---
 

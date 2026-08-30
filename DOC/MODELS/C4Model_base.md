@@ -1,6 +1,6 @@
 # Sistema Hoteleiro
 
-### Integrantes
+## Integrantes
 
 1. Alyson Ferreira de Souza
 2. Flavia Cristina Fagundes
@@ -9,7 +9,7 @@
 
 ---
 
-# Context
+## Context
 
 ```Mermaid
 C4Context
@@ -25,7 +25,7 @@ C4Context
 
 ---
 
-# Conteiner
+## Conteiner
 
 ```Mermaid
 C4Container
@@ -44,7 +44,7 @@ C4Container
 
 ---
 
-# Component
+## Component
 
 ```Mermaid
 C4Component
