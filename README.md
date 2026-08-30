@@ -24,7 +24,7 @@ Aplicação web desenvolvida para centralizar e simplificar processos de gestão
 
 ## Endereço da site
 
-[CloudInn](https://www.youtube.com/watch?v=hPr-Yc92qaY)
+[CloudInn](https://lemon-coast-0f8dbc70f.7.azurestaticapps.net/)
 
 ---
 
