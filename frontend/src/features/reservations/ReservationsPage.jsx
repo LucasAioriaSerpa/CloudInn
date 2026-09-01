@@ -9,6 +9,7 @@ import { ReservationFormModal } from "./components/ReservationFormModal.jsx";
 import { ReservationDetailModal } from "./components/ReservationDetailModal.jsx";
 import { CheckInModal } from "./components/CheckInModal.jsx";
 import { CheckOutModal } from "./components/CheckOutModal.jsx";
+import { ConfirmModal } from "../../components/common/ConfirmModal.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { EmptyState } from "../../components/common/EmptyState.jsx";
@@ -16,7 +17,8 @@ import { LoadingState } from "../../components/common/LoadingState.jsx";
 import { RESERVATION_STATUS } from "../../config/constants.js";
 
 export function ReservationsPage() {
-  const { reservations, loading, refreshData } = useHotel();
+  const { reservations, loading, refreshData, handleDeleteReservation } =
+    useHotel();
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -27,6 +29,8 @@ export function ReservationsPage() {
   const [selectedResForDetail, setSelectedResForDetail] = useState(null);
   const [selectedResForCheckIn, setSelectedResForCheckIn] = useState(null);
   const [selectedResForCheckOut, setSelectedResForCheckOut] = useState(null);
+  const [selectedResForDelete, setSelectedResForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Tabs for status filtering
   const tabs = [
@@ -186,6 +190,7 @@ export function ReservationsPage() {
           onCheckIn={(res) => setSelectedResForCheckIn(res)}
           onCheckOut={(res) => setSelectedResForCheckOut(res)}
           onViewDetails={(res) => setSelectedResForDetail(res)}
+          onDeleteReservation={(res) => setSelectedResForDelete(res)}
         />
       )}
 
@@ -207,6 +212,10 @@ export function ReservationsPage() {
           setSelectedResForDetail(null);
           setSelectedResForCheckOut(res);
         }}
+        onDelete={(res) => {
+          setSelectedResForDetail(null);
+          setSelectedResForDelete(res);
+        }}
       />
 
       <CheckInModal
@@ -219,6 +228,25 @@ export function ReservationsPage() {
         isOpen={!!selectedResForCheckOut}
         reservation={selectedResForCheckOut}
         onClose={() => setSelectedResForCheckOut(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!selectedResForDelete}
+        title={`Excluir Reserva #${selectedResForDelete?.id}`}
+        description={`Tem certeza de que deseja remover permanentemente a reserva do hóspede "${selectedResForDelete?.guest?.name || "Hóspede"}"? Esta chamada executará a Function DELETE.`}
+        confirmLabel="Excluir Reserva"
+        loading={isDeleting}
+        onClose={() => setSelectedResForDelete(null)}
+        onConfirm={async () => {
+          if (!selectedResForDelete) return;
+          setIsDeleting(true);
+          try {
+            await handleDeleteReservation(selectedResForDelete.id);
+            setSelectedResForDelete(null);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
       />
     </div>
   );

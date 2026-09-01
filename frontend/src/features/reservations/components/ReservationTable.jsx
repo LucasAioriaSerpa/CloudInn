@@ -2,7 +2,7 @@
  * @fileoverview Tabela completa de reservas com filtros, busca e ações operacionais
  */
 import React from "react";
-import { LogIn, LogOut, Eye, User, Calendar, BedDouble } from "lucide-react";
+import { LogIn, LogOut, Eye, Trash2 } from "lucide-react";
 import { ReservationBadge } from "../../../components/common/Badge.jsx";
 import { Button } from "../../../components/common/Button.jsx";
 import { ROOM_TYPE_LABELS } from "../../../config/constants.js";
@@ -12,6 +12,7 @@ export function ReservationTable({
   onCheckIn,
   onCheckOut,
   onViewDetails,
+  onDeleteReservation,
 }) {
   const formatDate = (iso) => {
     if (!iso) return "-";
@@ -143,6 +144,18 @@ export function ReservationTable({
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
+
+                    {onDeleteReservation && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        title="Excluir Reserva (DELETE)"
+                        onClick={() => onDeleteReservation(res)}
+                        className="text-[#28262C]/40 hover:text-rose-600 hover:bg-rose-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>

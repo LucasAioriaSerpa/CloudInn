@@ -7,14 +7,13 @@ import { mockStorage } from "../mocks/mockStorage.js";
 export const roomService = {
   /**
    * Lista todos os quartos com filtro opcional por status
-   * GET /room?status={available|reserved|occupied|dirty|cleaning}
+   * SELECT / fc_gp_cloudInn_select (GET /room?status=...)
    * @param {string} [status]
    * @returns {Promise<Array>}
-   *
    */
   async getRooms(status) {
     try {
-      const data = await apiClient.get("/room", { status });
+      const data = await apiClient.select("room", { status });
       if (Array.isArray(data)) {
         return data;
       }
@@ -26,13 +25,13 @@ export const roomService = {
 
   /**
    * Busca quarto por ID
-   * GET /room/{roomId}
+   * SELECT / fc_gp_cloudInn_select (GET /room/{roomId})
    * @param {number|string} roomId
    * @returns {Promise<Object>}
    */
   async getRoomById(roomId) {
     try {
-      const data = await apiClient.get(`/room/${roomId}`);
+      const data = await apiClient.select("room", { id: roomId });
       if (data && data.id) {
         return data;
       }
@@ -44,18 +43,48 @@ export const roomService = {
 
   /**
    * Atualiza o status do quarto para limpeza ou disponibilização (RF06, RF10, RF11)
-   * POST /room/{roomId}?status={status}
+   * UPDATE / fc_gp_cloudInn_update (POST /room/{roomId}?status={status})
    * @param {number|string} roomId
    * @param {string} status - available, reserved, occupied, dirty, cleaning
    * @returns {Promise<Object>}
    */
   async updateRoomStatus(roomId, status) {
     try {
-      const res = await apiClient.post(`/room/${roomId}`, null, { status });
+      const res = await apiClient.update("room", roomId, {}, { status });
       mockStorage.updateRoomStatus(roomId, status);
       return res;
     } catch {
       return mockStorage.updateRoomStatus(roomId, status);
+    }
+  },
+
+  /**
+   * Cadastra um novo quarto
+   * INSERT / fc_gp_cloudInn_insert (POST /room)
+   * @param {Object} roomData
+   * @returns {Promise<Object>}
+   */
+  async createRoom(roomData) {
+    try {
+      const res = await apiClient.insert("room", roomData);
+      return res;
+    } catch {
+      return roomData;
+    }
+  },
+
+  /**
+   * Exclui um quarto
+   * DELETE / fc_gp_cloudInn_delete
+   * @param {number|string} roomId
+   * @returns {Promise<Object>}
+   */
+  async deleteRoom(roomId) {
+    try {
+      const res = await apiClient.deleteRecord("room", roomId);
+      return res;
+    } catch {
+      return { code: 200, message: "Quarto excluído" };
     }
   },
 };

@@ -1,11 +1,15 @@
 /**
  * @fileoverview Constantes do sistema CloudInn, contratos de dados, enums e tokens de status
  */
+import {
+  API_URLS as CONFIG_API_URLS,
+  API_BASE_URL as CONFIG_API_BASE_URL,
+  API_KEY as CONFIG_API_KEY,
+} from "./api.js";
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://mock.apidog.com/m1/1365796-1370036-1426621";
-export const API_KEY = import.meta.env.VITE_API_KEY || "";
+export const API_URLS = CONFIG_API_URLS;
+export const API_BASE_URL = CONFIG_API_BASE_URL;
+export const API_KEY = CONFIG_API_KEY;
 
 /**
  * Status de Reservas conforme Swagger

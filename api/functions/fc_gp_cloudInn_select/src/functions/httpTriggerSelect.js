@@ -1,30 +1,53 @@
 const { app } = require("@azure/functions");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Accept, api_key, x-functions-key",
+  "Content-Type": "application/json",
+};
+
 app.http("httpTrigger1", {
-  methods: ["POST"],
+  methods: ["GET", "POST", "OPTIONS"],
   authLevel: "anonymous",
   handler: async (request, context) => {
-    context.log(`Http function processed request for url "${request.url}"`);
+    context.log(
+      `[fc_gp_cloudInn_select] Processando requisição ${request.method} para "${request.url}"`,
+    );
+
+    if (request.method === "OPTIONS") {
+      return {
+        status: 204,
+        headers: corsHeaders,
+      };
+    }
 
     try {
-      const mongoUri = (uri = "");
+      const mongoUri = process.env.MONGO_BD_URI || process.env.MONGO_URI;
       if (!mongoUri) {
         return {
           status: 500,
+          headers: corsHeaders,
           body: JSON.stringify({
-            error: "A variável de ambiente MONGO_URI não foi configurada.",
+            code: "500",
+            message:
+              "A variável de ambiente MONGO_BD_URI / MONGO_URI não foi configurada.",
           }),
         };
       }
 
-      const body = await request.json().catch(() => ({}));
-      const pessoa = {
-        nome: body.nome || "Sem nome",
-        idade: body.idade ?? null,
-        email: body.email || null,
-        criadoEm: new Date(),
-      };
+      const query = request.query;
+      const entity = query.get("entity") || "reservation";
+      const idParam =
+        query.get("id") ||
+        query.get("reservationId") ||
+        query.get("guestId") ||
+        query.get("roomId");
+      const statusParam = query.get("status");
+      const documentParam = query.get("document");
+      const searchParam = query.get("search");
 
       const client = new MongoClient(mongoUri, {
         serverApi: {
@@ -35,24 +58,195 @@ app.http("httpTrigger1", {
       });
 
       await client.connect();
-      const db = client.db(process.env.MONGO_DB_NAME || "test");
-      const result = await db.collection("pessoas").insertOne(pessoa);
+      const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
 
+      // 1. Consulta de Reservas (RF01, RF03, RF04, RF05, Swagger /reservation e /reservation/{id})
+      if (entity === "reservation" || entity === "reservations") {
+        const collection = db.collection("reservations");
+
+        if (idParam) {
+          const numId = Number(idParam);
+          const filter = isNaN(numId)
+            ? { id: idParam }
+            : { $or: [{ id: numId }, { id: idParam }] };
+          const item = await collection.findOne(filter, {
+            projection: { _id: 0 },
+          });
+
+          await client.close();
+
+          if (!item) {
+            return {
+              status: 404,
+              headers: corsHeaders,
+              body: JSON.stringify({
+                code: "404",
+                message: `Reserva com ID #${idParam} não encontrada.`,
+              }),
+            };
+          }
+
+          return {
+            status: 200,
+            headers: corsHeaders,
+            body: JSON.stringify(item),
+          };
+        }
+
+        const filter = {};
+        if (statusParam && statusParam !== "all") {
+          filter.status = statusParam;
+        }
+        if (searchParam) {
+          const regex = new RegExp(searchParam, "i");
+          filter.$or = [
+            { "guest.name": regex },
+            { "guest.document": regex },
+            { "room.number": regex },
+          ];
+        }
+
+        const items = await collection
+          .find(filter, { projection: { _id: 0 } })
+          .sort({ id: -1 })
+          .toArray();
+        await client.close();
+
+        return {
+          status: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(items),
+        };
+      }
+
+      // 2. Consulta de Quartos (RF06, RF10, RF11, Swagger /room e /room/{id})
+      if (entity === "room" || entity === "rooms") {
+        const collection = db.collection("rooms");
+
+        if (idParam) {
+          const numId = Number(idParam);
+          const filter = isNaN(numId)
+            ? { id: idParam }
+            : { $or: [{ id: numId }, { id: idParam }] };
+          const item = await collection.findOne(filter, {
+            projection: { _id: 0 },
+          });
+
+          await client.close();
+
+          if (!item) {
+            return {
+              status: 404,
+              headers: corsHeaders,
+              body: JSON.stringify({
+                code: "404",
+                message: `Quarto com ID #${idParam} não encontrado.`,
+              }),
+            };
+          }
+
+          return {
+            status: 200,
+            headers: corsHeaders,
+            body: JSON.stringify(item),
+          };
+        }
+
+        const filter = {};
+        if (statusParam && statusParam !== "all") {
+          filter.status = statusParam;
+        }
+        if (searchParam) {
+          filter.number = new RegExp(searchParam, "i");
+        }
+
+        const items = await collection
+          .find(filter, { projection: { _id: 0 } })
+          .sort({ number: 1 })
+          .toArray();
+        await client.close();
+
+        return {
+          status: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(items),
+        };
+      }
+
+      // 3. Consulta de Hóspedes (RF02, Swagger /guest/{id})
+      if (entity === "guest" || entity === "guests") {
+        const collection = db.collection("guests");
+
+        if (idParam) {
+          const numId = Number(idParam);
+          const filter = isNaN(numId)
+            ? { id: idParam }
+            : { $or: [{ id: numId }, { id: idParam }] };
+          const item = await collection.findOne(filter, {
+            projection: { _id: 0 },
+          });
+
+          await client.close();
+
+          if (!item) {
+            return {
+              status: 404,
+              headers: corsHeaders,
+              body: JSON.stringify({
+                code: "404",
+                message: `Hóspede com ID #${idParam} não encontrado.`,
+              }),
+            };
+          }
+
+          return {
+            status: 200,
+            headers: corsHeaders,
+            body: JSON.stringify(item),
+          };
+        }
+
+        const filter = {};
+        if (documentParam) {
+          filter.document = documentParam;
+        }
+        if (searchParam) {
+          const regex = new RegExp(searchParam, "i");
+          filter.$or = [{ name: regex }, { document: regex }, { email: regex }];
+        }
+
+        const items = await collection
+          .find(filter, { projection: { _id: 0 } })
+          .sort({ id: -1 })
+          .toArray();
+        await client.close();
+
+        return {
+          status: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(items),
+        };
+      }
+
+      await client.close();
       return {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
+        status: 400,
+        headers: corsHeaders,
         body: JSON.stringify({
-          mensagem: "Pessoa cadastrada com sucesso!",
-          insertedId: result.insertedId,
-          pessoa,
+          code: "400",
+          message: `Entidade desconhecida: '${entity}'. Use 'reservation', 'room' ou 'guest'.`,
         }),
       };
     } catch (error) {
-      context.error("Erro ao inserir pessoa no MongoDB:", error);
+      context.error("[fc_gp_cloudInn_select] Erro na consulta:", error);
       return {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: error.message }),
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: "500",
+          message:
+            error.message || "Erro inesperado ao consultar dados no MongoDB.",
+        }),
       };
     }
   },

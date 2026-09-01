@@ -12,6 +12,7 @@ import {
   LogIn,
   LogOut,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 import { Modal } from "../../../components/common/Modal.jsx";
 import {
@@ -27,6 +28,7 @@ export function ReservationDetailModal({
   onClose,
   onCheckIn,
   onCheckOut,
+  onDelete,
 }) {
   if (!reservation) return null;
 
@@ -149,9 +151,21 @@ export function ReservationDetailModal({
 
         {/* Bottom Actions */}
         <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-          <Button variant="outline" onClick={onClose}>
-            Fechar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={onClose}>
+              Fechar
+            </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                icon={Trash2}
+                onClick={() => onDelete(reservation)}
+                className="text-rose-600 hover:bg-rose-50"
+              >
+                Excluir
+              </Button>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             {isPending && onCheckIn && (

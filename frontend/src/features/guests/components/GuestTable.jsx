@@ -2,10 +2,15 @@
  * @fileoverview Tabela de listagem de hóspedes com busca e ações
  */
 import React from "react";
-import { Eye, Edit3, User, Mail, Phone } from "lucide-react";
+import { Eye, Edit3, Trash2 } from "lucide-react";
 import { Button } from "../../../components/common/Button.jsx";
 
-export function GuestTable({ guests = [], onViewDetails, onEditGuest }) {
+export function GuestTable({
+  guests = [],
+  onViewDetails,
+  onEditGuest,
+  onDeleteGuest,
+}) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[#D4C2FC]/60 bg-white shadow-xs">
       <table className="w-full text-left border-collapse text-xs sm:text-sm">
@@ -65,6 +70,17 @@ export function GuestTable({ guests = [], onViewDetails, onEditGuest }) {
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
+                  {onDeleteGuest && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Excluir Hóspede (DELETE)"
+                      onClick={() => onDeleteGuest(guest)}
+                      className="text-[#28262C]/40 hover:text-rose-600 hover:bg-rose-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </td>
             </tr>

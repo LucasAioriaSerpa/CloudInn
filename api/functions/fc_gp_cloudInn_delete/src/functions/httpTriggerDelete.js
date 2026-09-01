@@ -1,30 +1,70 @@
 const { app } = require("@azure/functions");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "DELETE, POST, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "Content-Type, Accept, api_key, x-functions-key",
+  "Content-Type": "application/json",
+};
+
 app.http("httpTrigger1", {
-  methods: ["POST"],
+  methods: ["DELETE", "POST", "OPTIONS"],
   authLevel: "anonymous",
   handler: async (request, context) => {
-    context.log(`Http function processed request for url "${request.url}"`);
+    context.log(
+      `[fc_gp_cloudInn_delete] Processando requisição ${request.method} para "${request.url}"`,
+    );
+
+    if (request.method === "OPTIONS") {
+      return {
+        status: 204,
+        headers: corsHeaders,
+      };
+    }
 
     try {
-      const mongoUri = (uri = "");
+      const mongoUri = process.env.MONGO_BD_URI || process.env.MONGO_URI;
       if (!mongoUri) {
         return {
           status: 500,
+          headers: corsHeaders,
           body: JSON.stringify({
-            error: "A variável de ambiente MONGO_URI não foi configurada.",
+            code: "500",
+            message:
+              "A variável de ambiente MONGO_BD_URI / MONGO_URI não foi configurada.",
           }),
         };
       }
 
+      const query = request.query;
       const body = await request.json().catch(() => ({}));
-      const pessoa = {
-        nome: body.nome || "Sem nome",
-        idade: body.idade ?? null,
-        email: body.email || null,
-        criadoEm: new Date(),
-      };
+
+      const entity = query.get("entity") || body.entity || "reservation";
+      const idParam =
+        query.get("id") ||
+        query.get("reservationId") ||
+        query.get("guestId") ||
+        query.get("roomId") ||
+        body.id;
+
+      if (!idParam) {
+        return {
+          status: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "400",
+            message:
+              "Identificador (id) é obrigatório para realizar a exclusão.",
+          }),
+        };
+      }
+
+      const numId = Number(idParam);
+      const filter = isNaN(numId)
+        ? { id: idParam }
+        : { $or: [{ id: numId }, { id: idParam }] };
 
       const client = new MongoClient(mongoUri, {
         serverApi: {
@@ -35,24 +75,71 @@ app.http("httpTrigger1", {
       });
 
       await client.connect();
-      const db = client.db(process.env.MONGO_DB_NAME || "test");
-      const result = await db.collection("pessoas").insertOne(pessoa);
+      const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
+
+      let collectionName = "reservations";
+      if (entity === "guest" || entity === "guests") {
+        collectionName = "guests";
+      } else if (entity === "room" || entity === "rooms") {
+        collectionName = "rooms";
+      }
+
+      const existingRecord = await db
+        .collection(collectionName)
+        .findOne(filter);
+      if (!existingRecord) {
+        await client.close();
+        return {
+          status: 404,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "404",
+            message: `Registro #${idParam} não encontrado na coleção '${collectionName}' para exclusão.`,
+          }),
+        };
+      }
+
+      const deleteResult = await db
+        .collection(collectionName)
+        .deleteOne(filter);
+
+      // Se for uma reserva excluída e o quarto estiver associado, libera o quarto se estiver reservado
+      if (
+        collectionName === "reservations" &&
+        existingRecord.room?.number &&
+        existingRecord.status === "pending"
+      ) {
+        await db
+          .collection("rooms")
+          .updateOne(
+            { number: existingRecord.room.number, status: "reserved" },
+            { $set: { status: "available", updatedAt: new Date() } },
+          );
+      }
+
+      await client.close();
 
       return {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: corsHeaders,
         body: JSON.stringify({
-          mensagem: "Pessoa cadastrada com sucesso!",
-          insertedId: result.insertedId,
-          pessoa,
+          code: 200,
+          type: "success",
+          message: `Registro #${idParam} excluído com sucesso da coleção '${collectionName}'.`,
+          deletedCount: deleteResult.deletedCount,
+          id: idParam,
         }),
       };
     } catch (error) {
-      context.error("Erro ao inserir pessoa no MongoDB:", error);
+      context.error("[fc_gp_cloudInn_delete] Erro na exclusão:", error);
       return {
         status: 500,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: error.message }),
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: "500",
+          message:
+            error.message || "Erro inesperado ao excluir registro no MongoDB.",
+        }),
       };
     }
   },

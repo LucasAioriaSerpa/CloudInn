@@ -62,6 +62,19 @@ class MockStorage {
     return guestData;
   }
 
+  deleteGuest(id) {
+    const guests = this.getGuests();
+    const updated = guests.filter(
+      (g) => Number(g.id) !== Number(id) && g.id !== id,
+    );
+    localStorage.setItem(STORAGE_KEYS.GUESTS, JSON.stringify(updated));
+    return {
+      code: 200,
+      type: "success",
+      message: `Hóspede #${id} excluído com sucesso`,
+    };
+  }
+
   // Rooms
   getRooms(statusFilter) {
     const rooms = JSON.parse(localStorage.getItem(STORAGE_KEYS.ROOMS) || "[]");
@@ -138,6 +151,25 @@ class MockStorage {
     const updated = [newRes, ...reservations];
     localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updated));
     return newRes;
+  }
+
+  deleteReservation(id) {
+    const reservations = this.getReservations();
+    const target = reservations.find(
+      (r) => Number(r.id) === Number(id) || r.id === id,
+    );
+    if (target && target.room?.id && target.status === "pending") {
+      this.updateRoomStatus(target.room.id, "available");
+    }
+    const updated = reservations.filter(
+      (r) => Number(r.id) !== Number(id) && r.id !== id,
+    );
+    localStorage.setItem(STORAGE_KEYS.RESERVATIONS, JSON.stringify(updated));
+    return {
+      code: 200,
+      type: "success",
+      message: `Reserva #${id} excluída com sucesso`,
+    };
   }
 
   registerCheckIn(reservationId) {

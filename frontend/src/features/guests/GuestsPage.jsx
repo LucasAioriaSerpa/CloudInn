@@ -7,17 +7,20 @@ import { useHotel } from "../../context/HotelContext.jsx";
 import { GuestTable } from "./components/GuestTable.jsx";
 import { GuestFormModal } from "./components/GuestFormModal.jsx";
 import { GuestDetailModal } from "./components/GuestDetailModal.jsx";
+import { ConfirmModal } from "../../components/common/ConfirmModal.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { EmptyState } from "../../components/common/EmptyState.jsx";
 import { LoadingState } from "../../components/common/LoadingState.jsx";
 
 export function GuestsPage() {
-  const { guests, loading, refreshData } = useHotel();
+  const { guests, loading, refreshData, handleDeleteGuest } = useHotel();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGuestForEdit, setSelectedGuestForEdit] = useState(null);
   const [selectedGuestForDetail, setSelectedGuestForDetail] = useState(null);
+  const [selectedGuestForDelete, setSelectedGuestForDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isNewGuestOpen, setIsNewGuestOpen] = useState(false);
 
   // Filtered guests
@@ -106,6 +109,7 @@ export function GuestsPage() {
           guests={filteredGuests}
           onViewDetails={(g) => setSelectedGuestForDetail(g)}
           onEditGuest={(g) => setSelectedGuestForEdit(g)}
+          onDeleteGuest={(g) => setSelectedGuestForDelete(g)}
         />
       )}
 
@@ -128,6 +132,32 @@ export function GuestsPage() {
         onEdit={(g) => {
           setSelectedGuestForDetail(null);
           setSelectedGuestForEdit(g);
+        }}
+        onDelete={(g) => {
+          setSelectedGuestForDetail(null);
+          setSelectedGuestForDelete(g);
+        }}
+      />
+
+      <ConfirmModal
+        isOpen={!!selectedGuestForDelete}
+        title={`Excluir Hóspede #${selectedGuestForDelete?.id}`}
+        description={`Tem certeza de que deseja excluir o cadastro do hóspede "${selectedGuestForDelete?.name}"? Esta operação executará a Function DELETE.`}
+        confirmLabel="Excluir Hóspede"
+        loading={isDeleting}
+        onClose={() => setSelectedGuestForDelete(null)}
+        onConfirm={async () => {
+          if (!selectedGuestForDelete) return;
+          setIsDeleting(true);
+          try {
+            await handleDeleteGuest(
+              selectedGuestForDelete.id,
+              selectedGuestForDelete.name,
+            );
+            setSelectedGuestForDelete(null);
+          } finally {
+            setIsDeleting(false);
+          }
         }}
       />
     </div>

@@ -7,13 +7,13 @@ import { mockStorage } from "../mocks/mockStorage.js";
 export const reservationService = {
   /**
    * Lista todas as reservas do sistema com filtro opcional por status
-   * GET /reservation?status={pending|active|completed|cancelled}
+   * SELECT / fc_gp_cloudInn_select (GET /reservation?status=...)
    * @param {string} [status] - pending, active, completed, cancelled
    * @returns {Promise<Array>}
    */
   async getReservations(status) {
     try {
-      const data = await apiClient.get("/reservation", { status });
+      const data = await apiClient.select("reservation", { status });
       if (Array.isArray(data)) {
         return data;
       }
@@ -26,13 +26,13 @@ export const reservationService = {
 
   /**
    * Busca uma reserva pelo ID
-   * GET /reservation/{reservationId}
+   * SELECT / fc_gp_cloudInn_select (GET /reservation/{reservationId})
    * @param {number|string} reservationId
    * @returns {Promise<Object>}
    */
   async getReservationById(reservationId) {
     try {
-      const data = await apiClient.get(`/reservation/${reservationId}`);
+      const data = await apiClient.select("reservation", { id: reservationId });
       if (data && data.id) {
         return data;
       }
@@ -43,15 +43,14 @@ export const reservationService = {
   },
 
   /**
-   * Recebe notificação e cadastra uma nova reserva (RF01, RF03, RF04, RF05)
-   * POST /reservation
+   * Cadastra uma nova reserva (RF01, RF03, RF04, RF05)
+   * INSERT / fc_gp_cloudInn_insert (POST /reservation)
    * @param {Object} reservationData - { guest, room, checkInDate, checkOutDate, status }
    * @returns {Promise<Object>}
    */
   async createReservation(reservationData) {
     try {
-      const result = await apiClient.post("/reservation", reservationData);
-      // Sincroniza localmente
+      const result = await apiClient.insert("reservation", reservationData);
       mockStorage.createReservation(reservationData);
       return result || reservationData;
     } catch {
@@ -60,14 +59,39 @@ export const reservationService = {
   },
 
   /**
+   * Atualiza os dados de uma reserva
+   * UPDATE / fc_gp_cloudInn_update
+   * @param {number|string} reservationId
+   * @param {Object} reservationData
+   * @returns {Promise<Object>}
+   */
+  async updateReservation(reservationId, reservationData) {
+    try {
+      const result = await apiClient.update(
+        "reservation",
+        reservationId,
+        reservationData,
+      );
+      return result;
+    } catch {
+      return { code: 200, message: "Reserva atualizada com sucesso" };
+    }
+  },
+
+  /**
    * Registra o check-in da reserva e altera status do quarto para occupied (RF07)
-   * POST /reservation/{reservationId}/checkin
+   * UPDATE / fc_gp_cloudInn_update (POST /reservation/{reservationId}/checkin)
    * @param {number|string} reservationId
    * @returns {Promise<Object>}
    */
   async registerCheckIn(reservationId) {
     try {
-      const res = await apiClient.post(`/reservation/${reservationId}/checkin`);
+      const res = await apiClient.update(
+        "reservation",
+        reservationId,
+        {},
+        { action: "checkin" },
+      );
       mockStorage.registerCheckIn(reservationId);
       return res;
     } catch {
@@ -77,19 +101,38 @@ export const reservationService = {
 
   /**
    * Registra o check-out da reserva e altera status do quarto para dirty (RF08, RF09)
-   * POST /reservation/{reservationId}/checkout
+   * UPDATE / fc_gp_cloudInn_update (POST /reservation/{reservationId}/checkout)
    * @param {number|string} reservationId
    * @returns {Promise<Object>}
    */
   async registerCheckOut(reservationId) {
     try {
-      const res = await apiClient.post(
-        `/reservation/${reservationId}/checkout`,
+      const res = await apiClient.update(
+        "reservation",
+        reservationId,
+        {},
+        { action: "checkout" },
       );
       mockStorage.registerCheckOut(reservationId);
       return res;
     } catch {
       return mockStorage.registerCheckOut(reservationId);
+    }
+  },
+
+  /**
+   * Exclui uma reserva
+   * DELETE / fc_gp_cloudInn_delete (DELETE /reservation/{reservationId})
+   * @param {number|string} reservationId
+   * @returns {Promise<Object>}
+   */
+  async deleteReservation(reservationId) {
+    try {
+      const res = await apiClient.deleteRecord("reservation", reservationId);
+      mockStorage.deleteReservation(reservationId);
+      return res;
+    } catch {
+      return mockStorage.deleteReservation(reservationId);
     }
   },
 };
