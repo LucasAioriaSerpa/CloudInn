@@ -10,7 +10,8 @@
       "dependencies": {
         "@azure/functions": "^4.0.0",
         "mongodb": "^7.6.0"
-      }
+      },
+      "devDependencies": {}
     },
     "node_modules/@azure/functions": {
       "version": "4.16.2",
