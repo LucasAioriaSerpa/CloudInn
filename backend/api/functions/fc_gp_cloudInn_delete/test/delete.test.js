@@ -1,11 +1,13 @@
 const { test, describe, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const { handler } = require("../src/functions/httpTriggerDelete");
-const {
-  createMockDb,
-  createMockContext,
-  createMockRequest,
-} = require("../../test-helpers/mockDb");
+let mockHelpers;
+try {
+  mockHelpers = require("./mockDb");
+} catch {
+  mockHelpers = require("../../test-helpers/mockDb");
+}
+const { createMockDb, createMockContext, createMockRequest } = mockHelpers;
 
 describe("fc_gp_cloudInn_delete - Testes Unitários", () => {
   let originalEnv;

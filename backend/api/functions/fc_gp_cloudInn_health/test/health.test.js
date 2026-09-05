@@ -1,11 +1,13 @@
 const { test, describe, beforeEach, afterEach } = require("node:test");
 const assert = require("node:assert/strict");
 const { handler, checkHealth } = require("../src/functions/httpTriggerHealth");
-const {
-  createMockDb,
-  createMockContext,
-  createMockRequest,
-} = require("../../test-helpers/mockDb");
+let mockHelpers;
+try {
+  mockHelpers = require("./mockDb");
+} catch {
+  mockHelpers = require("../../test-helpers/mockDb");
+}
+const { createMockDb, createMockContext, createMockRequest } = mockHelpers;
 
 describe("fc_gp_cloudInn_health - Testes Unitários", () => {
   let originalEnv;
