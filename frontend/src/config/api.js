@@ -8,6 +8,7 @@ export const API_URLS = {
   select: import.meta.env.VITE_CLOUDINN_SELECT_URL || "",
   update: import.meta.env.VITE_CLOUDINN_UPDATE_URL || "",
   delete: import.meta.env.VITE_CLOUDINN_DELETE_URL || "",
+  health: import.meta.env.VITE_CLOUDINN_HEALTH_URL || "",
 };
 
 export const API_BASE_URL =
