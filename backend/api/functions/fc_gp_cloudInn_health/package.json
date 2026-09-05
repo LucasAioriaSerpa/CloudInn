@@ -1,20 +1,14 @@
 {
-  "name": "cloudinn",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "workspaces": [
-    "frontend"
-  ],
+  "name": "azfunction-health",
+  "version": "1.0.0",
+  "description": "Azure Function para certificar a saúde (health) do banco de dados",
   "scripts": {
-    "dev": "npm run dev --workspace=frontend",
-    "build": "npm run build --workspace=frontend",
-    "lint": "npm run build --workspace=frontend",
-    "test": "npm run test:functions",
-    "test:functions": "node --test api/functions/**/*.test.js"
+    "start": "func start",
+    "test": "node --test test/**/*.test.js"
   },
   "dependencies": {
-    "@azure/functions": "^4.16.2",
+    "@azure/functions": "^4.0.0",
     "mongodb": "^7.6.0"
-  }
+  },
+  "main": "src/{index.js,functions/*.js}"
 }
