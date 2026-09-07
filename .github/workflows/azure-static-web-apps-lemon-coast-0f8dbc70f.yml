@@ -48,6 +48,15 @@ jobs:
           api_location: "" # Api source code path - optional
           output_location: "build" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
+        env:
+          MONGO_BD_URI: ${{ secrets.MONGO_BD_URI }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
+          VITE_CLOUDINN_INSERT_URL: ${{ secrets.VITE_CLOUDINN_INSERT_URL }}
+          VITE_CLOUDINN_SELECT_URL: ${{ secrets.VITE_CLOUDINN_SELECT_URL }}
+          VITE_CLOUDINN_UPDATE_URL: ${{ secrets.VITE_CLOUDINN_UPDATE_URL }}
+          VITE_CLOUDINN_DELETE_URL: ${{ secrets.VITE_CLOUDINN_DELETE_URL }}
+          VITE_CLOUDINN_HEALTH_URL: ${{ secrets.VITE_CLOUDINN_HEALTH_URL }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
