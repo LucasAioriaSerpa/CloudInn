@@ -34,7 +34,9 @@ function getAzureMongoUri(options = {}) {
   // 3. Varredura dinâmica para Connection Strings ou variáveis contendo URI MongoDB
   for (const [key, val] of Object.entries(process.env)) {
     if (
-      (key.startsWith("CUSTOMCONNSTR_") || key.toUpperCase().includes("MONGO") || key.toUpperCase().includes("CONN")) &&
+      (key.startsWith("CUSTOMCONNSTR_") ||
+        key.toUpperCase().includes("MONGO") ||
+        key.toUpperCase().includes("CONN")) &&
       typeof val === "string" &&
       (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
     ) {
@@ -138,7 +140,8 @@ async function handler(request, context, options = {}) {
       if (entity === "all" || !entity) {
         const resDel = await db.collection("reservations").deleteMany({});
         const guestDel = await db.collection("guests").deleteMany({});
-        totalDeleted = (resDel.deletedCount || 0) + (guestDel.deletedCount || 0);
+        totalDeleted =
+          (resDel.deletedCount || 0) + (guestDel.deletedCount || 0);
       } else {
         let coll = "reservations";
         if (entity === "guest" || entity === "guests") coll = "guests";

@@ -48,13 +48,13 @@ jobs:
           output_location: "dist" # Built app content directory (Vite outputs to dist)
           ###### End of Repository/Build Configurations ######
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_CLOUDINN_INSERT_URL: ${{ secrets.VITE_CLOUDINN_INSERT_URL }}
-          VITE_CLOUDINN_SELECT_URL: ${{ secrets.VITE_CLOUDINN_SELECT_URL }}
-          VITE_CLOUDINN_UPDATE_URL: ${{ secrets.VITE_CLOUDINN_UPDATE_URL }}
-          VITE_CLOUDINN_DELETE_URL: ${{ secrets.VITE_CLOUDINN_DELETE_URL }}
-          VITE_CLOUDINN_HEALTH_URL: ${{ secrets.VITE_CLOUDINN_HEALTH_URL }}
+          VITE_API_BASE_URL: https://mock.apidog.com/m1/1365796-1370036-1444387
+          VITE_API_KEY:
+          VITE_CLOUDINN_DELETE_URL: https://fc-cloudinn-delete-e9gtekcygfavh5a3.eastus2-01.azurewebsites.net/api/httptrigger1
+          VITE_CLOUDINN_HEALTH_URL: https://fc-cloudinn-health-hdbmdpcncpbuejdy.eastus2-01.azurewebsites.net/api/httptrigger1
+          VITE_CLOUDINN_INSERT_URL: https://fc-cloudinn-insert-hpdyc9dfg5c4hzgy.eastus2-01.azurewebsites.net/api/httptrigger1
+          VITE_CLOUDINN_SELECT_URL: https://fc-cloudinn-select-ckc8abd9bgbjbkhb.eastus2-01.azurewebsites.net/api/httptrigger1
+          VITE_CLOUDINN_UPDATE_URL: https://fc-cloudinn-update-cxa9fbhrcfd9b4gr.eastus2-01.azurewebsites.net/api/httptrigger1
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
