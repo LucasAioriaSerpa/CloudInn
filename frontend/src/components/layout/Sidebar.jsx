@@ -19,9 +19,10 @@ export function Sidebar({
   activeRoute,
   onNavigate,
   onOpenPartnerSimulator,
+  onOpenRestoreModal,
   onCloseMobile,
 }) {
-  const { stats, handleResetData } = useHotel();
+  const { stats } = useHotel();
 
   const navItems = [
     {
@@ -162,9 +163,9 @@ export function Sidebar({
         {/* Reset Demo Data Button */}
         <button
           type="button"
-          onClick={handleResetData}
-          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-[#D4C2FC]/70 hover:text-white hover:bg-white/5 transition-colors"
-          title="Redefinir quartos, reservas e hóspedes para o estado de demonstração"
+          onClick={onOpenRestoreModal}
+          className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium text-[#D4C2FC]/70 hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+          title="Redefinir quartos, reservas e hóspedes para o estado de demonstração no MongoDB"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Restaurar Dados Demo</span>

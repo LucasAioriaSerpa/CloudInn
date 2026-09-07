@@ -1,8 +1,8 @@
 /**
  * @fileoverview Serviço de Quartos em conformidade com o Swagger e arc42 (RF06, RF10, RF11)
+ * Comunicação direta com as Azure Functions e MongoDB sem mascaramento de erro por fallback local.
  */
 import { apiClient } from "./apiClient.js";
-import { mockStorage } from "../mocks/mockStorage.js";
 
 export const roomService = {
   /**
@@ -12,15 +12,11 @@ export const roomService = {
    * @returns {Promise<Array>}
    */
   async getRooms(status) {
-    try {
-      const data = await apiClient.select("room", { status });
-      if (Array.isArray(data)) {
-        return data;
-      }
-      return mockStorage.getRooms(status);
-    } catch {
-      return mockStorage.getRooms(status);
+    const data = await apiClient.select("room", { status });
+    if (Array.isArray(data)) {
+      return data;
     }
+    return [];
   },
 
   /**
@@ -30,15 +26,8 @@ export const roomService = {
    * @returns {Promise<Object>}
    */
   async getRoomById(roomId) {
-    try {
-      const data = await apiClient.select("room", { id: roomId });
-      if (data && data.id) {
-        return data;
-      }
-      return mockStorage.getRoomById(roomId);
-    } catch {
-      return mockStorage.getRoomById(roomId);
-    }
+    const data = await apiClient.select("room", { id: roomId });
+    return data;
   },
 
   /**
@@ -49,13 +38,8 @@ export const roomService = {
    * @returns {Promise<Object>}
    */
   async updateRoomStatus(roomId, status) {
-    try {
-      const res = await apiClient.update("room", roomId, {}, { status });
-      mockStorage.updateRoomStatus(roomId, status);
-      return res;
-    } catch {
-      return mockStorage.updateRoomStatus(roomId, status);
-    }
+    const res = await apiClient.update("room", roomId, {}, { status });
+    return res;
   },
 
   /**
@@ -65,12 +49,8 @@ export const roomService = {
    * @returns {Promise<Object>}
    */
   async createRoom(roomData) {
-    try {
-      const res = await apiClient.insert("room", roomData);
-      return res;
-    } catch {
-      return roomData;
-    }
+    const res = await apiClient.insert("room", roomData);
+    return res;
   },
 
   /**
@@ -80,11 +60,7 @@ export const roomService = {
    * @returns {Promise<Object>}
    */
   async deleteRoom(roomId) {
-    try {
-      const res = await apiClient.deleteRecord("room", roomId);
-      return res;
-    } catch {
-      return { code: 200, message: "Quarto excluído" };
-    }
+    const res = await apiClient.deleteRecord("room", roomId);
+    return res;
   },
 };

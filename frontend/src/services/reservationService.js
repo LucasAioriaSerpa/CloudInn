@@ -1,8 +1,8 @@
 /**
  * @fileoverview Serviço de Reservas em conformidade com o Swagger e arc42 (RF01, RF03, RF04, RF05, RF07, RF08, RF09)
+ * Comunicação direta com as Azure Functions e MongoDB sem mascaramento de erro por fallback local.
  */
 import { apiClient } from "./apiClient.js";
-import { mockStorage } from "../mocks/mockStorage.js";
 
 export const reservationService = {
   /**
@@ -12,16 +12,11 @@ export const reservationService = {
    * @returns {Promise<Array>}
    */
   async getReservations(status) {
-    try {
-      const data = await apiClient.select("reservation", { status });
-      if (Array.isArray(data)) {
-        return data;
-      }
-      return mockStorage.getReservations(status);
-    } catch {
-      // Fallback gracioso para persistência local caso o endpoint remoto esteja offline
-      return mockStorage.getReservations(status);
+    const data = await apiClient.select("reservation", { status });
+    if (Array.isArray(data)) {
+      return data;
     }
+    return [];
   },
 
   /**
@@ -31,15 +26,8 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async getReservationById(reservationId) {
-    try {
-      const data = await apiClient.select("reservation", { id: reservationId });
-      if (data && data.id) {
-        return data;
-      }
-      return mockStorage.getReservationById(reservationId);
-    } catch {
-      return mockStorage.getReservationById(reservationId);
-    }
+    const data = await apiClient.select("reservation", { id: reservationId });
+    return data;
   },
 
   /**
@@ -49,13 +37,8 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async createReservation(reservationData) {
-    try {
-      const result = await apiClient.insert("reservation", reservationData);
-      mockStorage.createReservation(reservationData);
-      return result || reservationData;
-    } catch {
-      return mockStorage.createReservation(reservationData);
-    }
+    const result = await apiClient.insert("reservation", reservationData);
+    return result || reservationData;
   },
 
   /**
@@ -66,16 +49,12 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async updateReservation(reservationId, reservationData) {
-    try {
-      const result = await apiClient.update(
-        "reservation",
-        reservationId,
-        reservationData,
-      );
-      return result;
-    } catch {
-      return { code: 200, message: "Reserva atualizada com sucesso" };
-    }
+    const result = await apiClient.update(
+      "reservation",
+      reservationId,
+      reservationData,
+    );
+    return result;
   },
 
   /**
@@ -85,18 +64,13 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async registerCheckIn(reservationId) {
-    try {
-      const res = await apiClient.update(
-        "reservation",
-        reservationId,
-        {},
-        { action: "checkin" },
-      );
-      mockStorage.registerCheckIn(reservationId);
-      return res;
-    } catch {
-      return mockStorage.registerCheckIn(reservationId);
-    }
+    const res = await apiClient.update(
+      "reservation",
+      reservationId,
+      {},
+      { action: "checkin" },
+    );
+    return res;
   },
 
   /**
@@ -106,18 +80,13 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async registerCheckOut(reservationId) {
-    try {
-      const res = await apiClient.update(
-        "reservation",
-        reservationId,
-        {},
-        { action: "checkout" },
-      );
-      mockStorage.registerCheckOut(reservationId);
-      return res;
-    } catch {
-      return mockStorage.registerCheckOut(reservationId);
-    }
+    const res = await apiClient.update(
+      "reservation",
+      reservationId,
+      {},
+      { action: "checkout" },
+    );
+    return res;
   },
 
   /**
@@ -127,12 +96,7 @@ export const reservationService = {
    * @returns {Promise<Object>}
    */
   async deleteReservation(reservationId) {
-    try {
-      const res = await apiClient.deleteRecord("reservation", reservationId);
-      mockStorage.deleteReservation(reservationId);
-      return res;
-    } catch {
-      return mockStorage.deleteReservation(reservationId);
-    }
+    const res = await apiClient.deleteRecord("reservation", reservationId);
+    return res;
   },
 };

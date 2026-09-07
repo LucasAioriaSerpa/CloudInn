@@ -85,6 +85,34 @@ const SWAGGER_ENDPOINTS = [
     desc: "Atualiza dados de contato ou identificação do hóspede.",
     status: "Implementado",
   },
+  {
+    method: "DELETE",
+    path: "/reservation/{id}",
+    rf: "Exclusão Reserva",
+    desc: "Remove a reserva e libera o quarto se estava pendente (fc_gp_cloudInn_delete).",
+    status: "Implementado",
+  },
+  {
+    method: "DELETE",
+    path: "/room/{id}",
+    rf: "Exclusão Quarto",
+    desc: "Remove o quarto da base de dados (fc_gp_cloudInn_delete).",
+    status: "Implementado",
+  },
+  {
+    method: "DELETE",
+    path: "/guest/{id}",
+    rf: "Exclusão Hóspede",
+    desc: "Remove o registro cadastral do hóspede (fc_gp_cloudInn_delete).",
+    status: "Implementado",
+  },
+  {
+    method: "GET",
+    path: "/health",
+    rf: "Monitoramento",
+    desc: "Verifica a integridade da conexão das Functions com o MongoDB (fc_gp_cloudInn_health).",
+    status: "Implementado",
+  },
 ];
 
 export function ApiExplorerModal({ isOpen, onClose }) {

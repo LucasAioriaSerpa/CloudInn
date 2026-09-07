@@ -1,8 +1,8 @@
 /**
  * @fileoverview Serviço de Hóspedes em conformidade com o Swagger e arc42 (RF02)
+ * Comunicação direta com as Azure Functions e MongoDB sem mascaramento de erro por fallback local.
  */
 import { apiClient } from "./apiClient.js";
-import { mockStorage } from "../mocks/mockStorage.js";
 
 export const guestService = {
   /**
@@ -12,15 +12,11 @@ export const guestService = {
    * @returns {Promise<Array>}
    */
   async getGuests(search = "") {
-    try {
-      const data = await apiClient.select("guest", { search });
-      if (Array.isArray(data)) {
-        return data;
-      }
-      return mockStorage.getGuests();
-    } catch {
-      return mockStorage.getGuests();
+    const data = await apiClient.select("guest", { search });
+    if (Array.isArray(data)) {
+      return data;
     }
+    return [];
   },
 
   /**
@@ -30,15 +26,8 @@ export const guestService = {
    * @returns {Promise<Object>}
    */
   async getGuestById(guestId) {
-    try {
-      const data = await apiClient.select("guest", { id: guestId });
-      if (data && data.id) {
-        return data;
-      }
-      return mockStorage.getGuestById(guestId);
-    } catch {
-      return mockStorage.getGuestById(guestId);
-    }
+    const data = await apiClient.select("guest", { id: guestId });
+    return data;
   },
 
   /**
@@ -48,13 +37,8 @@ export const guestService = {
    * @returns {Promise<Object>}
    */
   async createGuest(guestData) {
-    try {
-      const res = await apiClient.insert("guest", guestData);
-      const saved = mockStorage.saveGuest(guestData);
-      return res || saved;
-    } catch {
-      return mockStorage.saveGuest(guestData);
-    }
+    const res = await apiClient.insert("guest", guestData);
+    return res;
   },
 
   /**
@@ -65,14 +49,8 @@ export const guestService = {
    * @returns {Promise<Object>}
    */
   async updateGuest(guestId, guestData) {
-    try {
-      const res = await apiClient.update("guest", guestId, guestData);
-      mockStorage.saveGuest({ ...guestData, id: guestId });
-      return res || { code: 200, message: "Hóspede atualizado com sucesso" };
-    } catch {
-      mockStorage.saveGuest({ ...guestData, id: guestId });
-      return { code: 200, message: "Hóspede atualizado com sucesso" };
-    }
+    const res = await apiClient.update("guest", guestId, guestData);
+    return res;
   },
 
   /**
@@ -82,12 +60,7 @@ export const guestService = {
    * @returns {Promise<Object>}
    */
   async deleteGuest(guestId) {
-    try {
-      const res = await apiClient.deleteRecord("guest", guestId);
-      mockStorage.deleteGuest(guestId);
-      return res;
-    } catch {
-      return mockStorage.deleteGuest(guestId);
-    }
+    const res = await apiClient.deleteRecord("guest", guestId);
+    return res;
   },
 };

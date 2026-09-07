@@ -21,15 +21,14 @@ jobs:
           lfs: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: "lts/krypton"
+          node-version: "20"
 
       - name: Install dependencies
         working-directory: ./frontend
         run: |
-          rm -rf package-lock.json node_modules
-          npm install
+          npm ci || npm install
 
       - name: Build app
         working-directory: ./frontend
@@ -46,17 +45,9 @@ jobs:
           # For more information regarding Static Web App workflow configurations, please visit: https://aka.ms/swaworkflowconfig
           app_location: "./frontend" # App source code path
           api_location: "" # Api source code path - optional
-          output_location: "build" # Built app content directory - optional
+          output_location: "dist" # Built app content directory (Vite outputs to dist)
+          skip_app_build: true
           ###### End of Repository/Build Configurations ######
-        env:
-          MONGO_BD_URI: ${{ secrets.MONGO_BD_URI }}
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-          VITE_API_KEY: ${{ secrets.VITE_API_KEY }}
-          VITE_CLOUDINN_INSERT_URL: ${{ secrets.VITE_CLOUDINN_INSERT_URL }}
-          VITE_CLOUDINN_SELECT_URL: ${{ secrets.VITE_CLOUDINN_SELECT_URL }}
-          VITE_CLOUDINN_UPDATE_URL: ${{ secrets.VITE_CLOUDINN_UPDATE_URL }}
-          VITE_CLOUDINN_DELETE_URL: ${{ secrets.VITE_CLOUDINN_DELETE_URL }}
-          VITE_CLOUDINN_HEALTH_URL: ${{ secrets.VITE_CLOUDINN_HEALTH_URL }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'

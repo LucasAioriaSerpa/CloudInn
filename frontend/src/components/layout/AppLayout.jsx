@@ -7,11 +7,13 @@ import { Header } from "./Header.jsx";
 import { ToastContainer } from "../common/Toast.jsx";
 import { PartnerSimulatorModal } from "../../features/partner-simulator/PartnerSimulatorModal.jsx";
 import { ApiExplorerModal } from "../../features/api-docs/ApiExplorerModal.jsx";
+import { RestoreDemoModal } from "../../features/demo/RestoreDemoModal.jsx";
 
 export function AppLayout({ activeRoute, onNavigate, children }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [partnerModalOpen, setPartnerModalOpen] = useState(false);
   const [apiExplorerOpen, setApiExplorerOpen] = useState(false);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
 
   return (
     <div className="flex h-screen w-full bg-[#F9F5FF] overflow-hidden text-[#28262C]">
@@ -21,6 +23,7 @@ export function AppLayout({ activeRoute, onNavigate, children }) {
           activeRoute={activeRoute}
           onNavigate={onNavigate}
           onOpenPartnerSimulator={() => setPartnerModalOpen(true)}
+          onOpenRestoreModal={() => setRestoreModalOpen(true)}
         />
       </div>
 
@@ -38,6 +41,10 @@ export function AppLayout({ activeRoute, onNavigate, children }) {
               onNavigate={onNavigate}
               onOpenPartnerSimulator={() => {
                 setPartnerModalOpen(true);
+                setMobileMenuOpen(false);
+              }}
+              onOpenRestoreModal={() => {
+                setRestoreModalOpen(true);
                 setMobileMenuOpen(false);
               }}
               onCloseMobile={() => setMobileMenuOpen(false)}
@@ -73,6 +80,12 @@ export function AppLayout({ activeRoute, onNavigate, children }) {
       <ApiExplorerModal
         isOpen={apiExplorerOpen}
         onClose={() => setApiExplorerOpen(false)}
+      />
+
+      {/* Restore Demo Data Modal (Seções 21-31) */}
+      <RestoreDemoModal
+        isOpen={restoreModalOpen}
+        onClose={() => setRestoreModalOpen(false)}
       />
     </div>
   );
