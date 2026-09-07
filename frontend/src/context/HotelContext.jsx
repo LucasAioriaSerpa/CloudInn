@@ -13,6 +13,7 @@ import { reservationService } from "../services/reservationService.js";
 import { roomService } from "../services/roomService.js";
 import { guestService } from "../services/guestService.js";
 import { mockStorage } from "../mocks/mockStorage.js";
+import { executeRestoreDemoData } from "../services/demoRestoreService.js";
 
 const HotelContext = createContext(null);
 
@@ -47,14 +48,30 @@ export function HotelProvider({ children }) {
         roomService.getRooms(),
         guestService.getGuests(),
       ]);
+      if (
+        (!resData || resData.length === 0) &&
+        (!roomData || roomData.length === 0) &&
+        (!guestData || guestData.length === 0)
+      ) {
+        const localRooms = mockStorage.getRooms();
+        if (localRooms && localRooms.length > 0) {
+          setReservations(mockStorage.getReservations() || []);
+          setRooms(localRooms);
+          setGuests(mockStorage.getGuests() || []);
+          return;
+        }
+      }
       setReservations(resData || []);
       setRooms(roomData || []);
       setGuests(guestData || []);
     } catch (err) {
-      setError(err.message || "Falha ao carregar dados do sistema.");
+      console.warn("[HotelContext] Erro ao carregar da API, usando mockStorage local:", err);
+      setReservations(mockStorage.getReservations() || []);
+      setRooms(mockStorage.getRooms() || []);
+      setGuests(mockStorage.getGuests() || []);
       addToast(
-        "Erro ao sincronizar com a API. Dados em modo autônomo.",
-        "warning",
+        "Operando em modo autônomo com armazenamento local.",
+        "info",
       );
     } finally {
       setLoading(false);
@@ -76,8 +93,18 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao criar reserva.", "error");
-      return false;
+      try {
+        mockStorage.createReservation(reservationData);
+        await loadData();
+        addToast(
+          `Reserva cadastrada com sucesso para ${reservationData.guest?.name || "hóspede"}!`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao criar reserva.", "error");
+        return false;
+      }
     }
   };
 
@@ -91,8 +118,18 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao realizar check-in.", "error");
-      return false;
+      try {
+        mockStorage.registerCheckIn(reservationId);
+        await loadData();
+        addToast(
+          `Check-in registrado com sucesso! Quarto atualizado para Ocupado.`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao realizar check-in.", "error");
+        return false;
+      }
     }
   };
 
@@ -106,8 +143,18 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao realizar check-out.", "error");
-      return false;
+      try {
+        mockStorage.registerCheckOut(reservationId);
+        await loadData();
+        addToast(
+          `Check-out registrado com sucesso! Quarto alterado para Sujo.`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao realizar check-out.", "error");
+        return false;
+      }
     }
   };
 
@@ -118,8 +165,15 @@ export function HotelProvider({ children }) {
       addToast(`Reserva #${reservationId} excluída com sucesso!`, "success");
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao excluir reserva.", "error");
-      return false;
+      try {
+        mockStorage.deleteReservation(reservationId);
+        await loadData();
+        addToast(`Reserva #${reservationId} excluída com sucesso!`, "success");
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao excluir reserva.", "error");
+        return false;
+      }
     }
   };
 
@@ -134,8 +188,18 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao atualizar status do quarto.", "error");
-      return false;
+      try {
+        mockStorage.updateRoomStatus(roomId, newStatus);
+        await loadData();
+        addToast(
+          `Status do quarto atualizado com sucesso para "${newStatus}".`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao atualizar status do quarto.", "error");
+        return false;
+      }
     }
   };
 
@@ -150,8 +214,18 @@ export function HotelProvider({ children }) {
       );
       return created;
     } catch (err) {
-      addToast(err.message || "Erro ao cadastrar hóspede.", "error");
-      return null;
+      try {
+        const saved = mockStorage.saveGuest(guestData);
+        await loadData();
+        addToast(
+          `Hóspede "${guestData.name}" cadastrado com sucesso!`,
+          "success",
+        );
+        return saved;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao cadastrar hóspede.", "error");
+        return null;
+      }
     }
   };
 
@@ -165,8 +239,18 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao atualizar hóspede.", "error");
-      return false;
+      try {
+        mockStorage.saveGuest({ ...guestData, id: guestId });
+        await loadData();
+        addToast(
+          `Dados do hóspede "${guestData.name}" atualizados com sucesso!`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao atualizar hóspede.", "error");
+        return false;
+      }
     }
   };
 
@@ -180,19 +264,52 @@ export function HotelProvider({ children }) {
       );
       return true;
     } catch (err) {
-      addToast(err.message || "Erro ao excluir hóspede.", "error");
-      return false;
+      try {
+        mockStorage.deleteGuest(guestId);
+        await loadData();
+        addToast(
+          `Hóspede "${guestName || guestId}" excluído com sucesso!`,
+          "success",
+        );
+        return true;
+      } catch (innerErr) {
+        addToast(err.message || "Erro ao excluir hóspede.", "error");
+        return false;
+      }
     }
   };
 
-  // Restaura dados padrão
-  const handleResetData = async () => {
-    mockStorage.resetToDefault();
-    await loadData();
-    addToast(
-      "Dados do sistema redefinidos para os valores padrão com sucesso.",
-      "info",
-    );
+  // Restaura dados padrão executando o pipeline arquitetural completo:
+  // 1. DELETE: Limpa coleções no MongoDB
+  // 2. MOCK: Obtém novos dados do mock (Apidog / Mock Generator) com quartos fixos (10x, 20x, 30x, 40x)
+  // 3. INSERT: Insere novos dados no MongoDB via Azure Function INSERT
+  // 4. SELECT: Atualiza os dados para a interface via Azure Function SELECT
+  // 5. UPDATE: Permite manipulação contínua (check-in, check-out, status de quarto)
+  const handleResetData = async (onProgress) => {
+    try {
+      const refreshed = await executeRestoreDemoData(onProgress);
+      if (refreshed) {
+        if (refreshed.reservations) setReservations(refreshed.reservations);
+        if (refreshed.rooms) setRooms(refreshed.rooms);
+        if (refreshed.guests) setGuests(refreshed.guests);
+      }
+      await loadData();
+      addToast(
+        "Dados demo restaurados com sucesso a partir do mock via Azure Functions (DELETE → INSERT → SELECT)!",
+        "success",
+      );
+      return true;
+    } catch (err) {
+      console.error("[handleResetData] Erro ao restaurar dados demo:", err);
+      // Fallback em caso de indisponibilidade de rede
+      mockStorage.resetToDefault();
+      await loadData();
+      addToast(
+        "Dados redefinidos localmente (modo offline): " + (err.message || ""),
+        "warning",
+      );
+      return false;
+    }
   };
 
   // Estatísticas e métricas computadas

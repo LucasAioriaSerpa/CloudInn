@@ -9,6 +9,51 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+function getAzureMongoUri(options = {}) {
+  if (options.mongoUri) return options.mongoUri;
+
+  // 1. Azure Connection Strings (injetadas automaticamente pelo Azure com o prefixo CUSTOMCONNSTR_)
+  const azureConnStr =
+    process.env.CUSTOMCONNSTR_MONGO_BD_URI ||
+    process.env.CUSTOMCONNSTR_MONGO_URI ||
+    process.env.CUSTOMCONNSTR_MONGODB_URI ||
+    process.env.CUSTOMCONNSTR_MongoDB ||
+    process.env.CUSTOMCONNSTR_MongoDbConnection ||
+    process.env.CUSTOMCONNSTR_defaultConnection;
+  if (azureConnStr) return azureConnStr;
+
+  // 2. Variáveis de ambiente / App Settings diretas
+  const directEnv =
+    process.env.MONGO_BD_URI ||
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    process.env.MongoDbConnection ||
+    process.env.MongoDB;
+  if (directEnv) return directEnv;
+
+  // 3. Varredura dinâmica para Connection Strings ou variáveis contendo URI MongoDB
+  for (const [key, val] of Object.entries(process.env)) {
+    if (
+      (key.startsWith("CUSTOMCONNSTR_") || key.toUpperCase().includes("MONGO") || key.toUpperCase().includes("CONN")) &&
+      typeof val === "string" &&
+      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
+    ) {
+      return val;
+    }
+  }
+
+  for (const val of Object.values(process.env)) {
+    if (
+      typeof val === "string" &&
+      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
+    ) {
+      return val;
+    }
+  }
+
+  return undefined;
+}
+
 async function handler(request, context, options = {}) {
   const logger = context?.log || console.log;
   logger(
@@ -23,8 +68,7 @@ async function handler(request, context, options = {}) {
   }
 
   try {
-    const mongoUri =
-      options.mongoUri || process.env.MONGO_BD_URI || process.env.MONGO_URI;
+    const mongoUri = getAzureMongoUri(options);
     if (!mongoUri) {
       return {
         status: 500,
@@ -32,7 +76,7 @@ async function handler(request, context, options = {}) {
         body: JSON.stringify({
           code: "500",
           message:
-            "A variável de ambiente MONGO_BD_URI / MONGO_URI não foi configurada.",
+            "A connection string do MongoDB não foi encontrada no Azure (Connection strings ou Environment variables: MONGO_BD_URI / CUSTOMCONNSTR_*).",
         }),
       };
     }
@@ -54,7 +98,15 @@ async function handler(request, context, options = {}) {
       (query.get ? query.get("roomId") : undefined) ||
       body.id;
 
-    if (!idParam) {
+    const isClearAll =
+      idParam === "all" ||
+      idParam === "*" ||
+      body.all === true ||
+      (query.get && query.get("all") === "true") ||
+      body.action === "clear" ||
+      (query.get && query.get("action") === "clear");
+
+    if (!idParam && !isClearAll) {
       return {
         status: 400,
         headers: corsHeaders,
@@ -64,11 +116,6 @@ async function handler(request, context, options = {}) {
         }),
       };
     }
-
-    const numId = Number(idParam);
-    const filter = isNaN(numId)
-      ? { id: idParam }
-      : { $or: [{ id: numId }, { id: idParam }] };
 
     const client =
       options.client ||
@@ -84,6 +131,39 @@ async function handler(request, context, options = {}) {
       await client.connect();
     }
     const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
+
+    // Limpeza total de coleções para o fluxo de restaurar dados demo
+    if (isClearAll) {
+      let totalDeleted = 0;
+      if (entity === "all" || !entity) {
+        const resDel = await db.collection("reservations").deleteMany({});
+        const guestDel = await db.collection("guests").deleteMany({});
+        totalDeleted = (resDel.deletedCount || 0) + (guestDel.deletedCount || 0);
+      } else {
+        let coll = "reservations";
+        if (entity === "guest" || entity === "guests") coll = "guests";
+        else if (entity === "room" || entity === "rooms") coll = "rooms";
+        const delRes = await db.collection(coll).deleteMany({});
+        totalDeleted = delRes.deletedCount || 0;
+      }
+
+      await client.close();
+      return {
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: 200,
+          type: "success",
+          message: `Banco de dados limpo com sucesso (${totalDeleted} registros removidos).`,
+          deletedCount: totalDeleted,
+        }),
+      };
+    }
+
+    const numId = Number(idParam);
+    const filter = isNaN(numId)
+      ? { id: idParam }
+      : { $or: [{ id: numId }, { id: idParam }] };
 
     let collectionName = "reservations";
     if (entity === "guest" || entity === "guests") {

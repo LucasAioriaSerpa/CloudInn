@@ -9,12 +9,54 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
+function getAzureMongoUri(options = {}) {
+  if (options.mongoUri) return options.mongoUri;
+
+  // 1. Azure Connection Strings (injetadas automaticamente pelo Azure com o prefixo CUSTOMCONNSTR_)
+  const azureConnStr =
+    process.env.CUSTOMCONNSTR_MONGO_BD_URI ||
+    process.env.CUSTOMCONNSTR_MONGO_URI ||
+    process.env.CUSTOMCONNSTR_MONGODB_URI ||
+    process.env.CUSTOMCONNSTR_MongoDB ||
+    process.env.CUSTOMCONNSTR_MongoDbConnection ||
+    process.env.CUSTOMCONNSTR_defaultConnection;
+  if (azureConnStr) return azureConnStr;
+
+  // 2. Variáveis de ambiente / App Settings diretas
+  const directEnv =
+    process.env.MONGO_BD_URI ||
+    process.env.MONGO_URI ||
+    process.env.MONGODB_URI ||
+    process.env.MongoDbConnection ||
+    process.env.MongoDB;
+  if (directEnv) return directEnv;
+
+  // 3. Varredura dinâmica para Connection Strings ou variáveis contendo URI MongoDB
+  for (const [key, val] of Object.entries(process.env)) {
+    if (
+      (key.startsWith("CUSTOMCONNSTR_") || key.toUpperCase().includes("MONGO") || key.toUpperCase().includes("CONN")) &&
+      typeof val === "string" &&
+      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
+    ) {
+      return val;
+    }
+  }
+
+  for (const val of Object.values(process.env)) {
+    if (
+      typeof val === "string" &&
+      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
+    ) {
+      return val;
+    }
+  }
+
+  return undefined;
+}
+
 async function checkHealth(options = {}) {
   const startTime = Date.now();
-  const mongoUri =
-    options.mongoUri !== undefined
-      ? options.mongoUri
-      : process.env.MONGO_BD_URI || process.env.MONGO_URI;
+  const mongoUri = getAzureMongoUri(options);
 
   const dbName = process.env.MONGO_DB_NAME || "cloudinn";
 

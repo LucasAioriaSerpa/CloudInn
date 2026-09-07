@@ -115,6 +115,28 @@ function createMockDb(initialData = {}) {
         }
         return { deletedCount: 0 };
       },
+      deleteMany: async (filter = {}) => {
+        if (!filter || Object.keys(filter).length === 0) {
+          const count = items.length;
+          items.length = 0;
+          return { deletedCount: count };
+        }
+        let count = 0;
+        for (let i = items.length - 1; i >= 0; i--) {
+          if (matchFilter(items[i], filter)) {
+            items.splice(i, 1);
+            count++;
+          }
+        }
+        return { deletedCount: count };
+      },
+      insertMany: async (docs) => {
+        if (Array.isArray(docs)) {
+          docs.forEach((doc) => items.push({ ...doc }));
+          return { acknowledged: true, insertedCount: docs.length };
+        }
+        return { acknowledged: true, insertedCount: 0 };
+      },
     };
   };
 
