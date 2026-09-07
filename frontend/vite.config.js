@@ -35,9 +35,10 @@ export default defineConfig(({ command }) => {
                 req.url.startsWith("/guest") ||
                 req.url.startsWith("/health"))
             ) {
-              return middleware(req, res, next);
+              middleware(req, res, next);
+            } else {
+              next();
             }
-            return next();
           });
         }
       },
