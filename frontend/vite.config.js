@@ -5,16 +5,27 @@ import { createRequire } from "module";
 import { defineConfig } from "vite";
 
 const require = createRequire(import.meta.url);
-const { azureFunctionsMiddleware } = require("../backend/localBridge.cjs");
 
-export default defineConfig(() => {
-  return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      {
-        name: "azure-functions-dev-server",
-        configureServer(server) {
+export default defineConfig(({ command }) => {
+  const plugins = [react(), tailwindcss()];
+
+  // Attach local Azure Functions middleware ONLY during local development (vite dev/serve)
+  if (command === "serve") {
+    plugins.push({
+      name: "azure-functions-dev-server",
+      configureServer(server) {
+        let middleware = null;
+        try {
+          const bridge = require("../backend/localBridge.cjs");
+          middleware = bridge.azureFunctionsMiddleware;
+        } catch (err) {
+          console.warn(
+            "[vite.config.js] Local Azure Functions bridge not loaded (dependencies not present or running in standalone mode):",
+            err.message,
+          );
+        }
+
+        if (middleware) {
           server.middlewares.use((req, res, next) => {
             if (
               req.url &&
@@ -24,13 +35,17 @@ export default defineConfig(() => {
                 req.url.startsWith("/guest") ||
                 req.url.startsWith("/health"))
             ) {
-              return azureFunctionsMiddleware(req, res, next);
+              return middleware(req, res, next);
             }
             return next();
           });
-        },
+        }
       },
-    ],
+    });
+  }
+
+  return {
+    plugins,
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
