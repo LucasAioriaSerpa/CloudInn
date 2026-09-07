@@ -1,7 +1,7 @@
 {
   "name": "azfunction-health",
   "version": "1.0.0",
-  "description": "Azure Function para certificar a saúde (health) do banco de dados",
+  "description": "Azure Function de Health Check do sistema CloudInn",
   "scripts": {
     "start": "func start",
     "test": "node --test test/**/*.test.js"

@@ -2,58 +2,32 @@ openapi: 3.0.4
 info:
   title: CloudInn API
   description: |-
-    API do sistema interno hoteleiro CloudInn. 
-    Responsável por gerenciar o ciclo de vida das reservas, hóspedes e status dos quartos (RF01 a RF11), 
-    integrando-se com sites externos de reservas.
-  version: 1.0.0
+    API do sistema interno hoteleiro CloudInn.
+    Responsável pelo gerenciamento de reservas, hóspedes e quartos, incluindo o fluxo completo de CRUD
+    (POST, GET, PUT e DELETE) para os principais recursos do sistema e as operações específicas de
+    check-in e check-out descritas na arquitetura (RF01 a RF11).
+
+    O contrato considera os três principais dados persistidos descritos na arquitetura do sistema:
+    Reserva, Hóspede e Quarto.
+  version: 1.1.0
 servers:
   - url: https://api.cloudinn.internal/v1
+
 tags:
   - name: reservation
     description: Gerenciamento de reservas, notificações externas, check-in e check-out
   - name: room
-    description: Controle e atualização do status dos quartos
+    description: Cadastro, consulta, atualização e remoção de quartos e controle de seus status
   - name: guest
-    description: Cadastro e gerenciamento de dados dos hóspedes
+    description: Cadastro, consulta, atualização e remoção de hóspedes
+
 paths:
   /reservation:
-    post:
-      tags:
-        - reservation
-      summary: Recebe notificação e registra uma nova reserva
-      description: Recebe dados de sistemas externos parceiros para cadastrar reservas, associar quartos e hóspedes (RF01, RF03, RF04, RF05).
-      operationId: createReservation
-      requestBody:
-        description: Objeto contendo os dados da reserva, hóspede e datas
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Reservation"
-        required: true
-      responses:
-        "200":
-          description: Reserva registrada com sucesso
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Reservation"
-        "400":
-          description: Dados inválidos fornecidos
-        "422":
-          description: Erro de validação
-        default:
-          description: Erro inesperado
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Error"
-      security:
-        - api_key: []
-
     get:
       tags:
         - reservation
       summary: Lista as reservas do sistema
+      description: Retorna as reservas cadastradas. Permite filtrar pelo status da reserva.
       operationId: getReservations
       parameters:
         - name: status
@@ -69,7 +43,7 @@ paths:
               - cancelled
       responses:
         "200":
-          description: Operação bem sucedida
+          description: Reservas retornadas com sucesso
           content:
             application/json:
               schema:
@@ -85,31 +59,154 @@ paths:
       security:
         - api_key: []
 
+    post:
+      tags:
+        - reservation
+      summary: Registra uma nova reserva
+      description: |-
+        Recebe os dados necessários para cadastrar uma reserva e relacioná-la ao hóspede e ao quarto,
+        atendendo ao recebimento de notificações externas e ao registro de reservas (RF01, RF03, RF04, RF05).
+      operationId: createReservation
+      requestBody:
+        $ref: "#/components/requestBodies/ReservationBody"
+      responses:
+        "201":
+          description: Reserva registrada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          description: Dados inválidos fornecidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
   /reservation/{reservationId}:
     get:
       tags:
         - reservation
       summary: Busca uma reserva pelo ID
+      description: Retorna uma única reserva a partir de seu identificador.
       operationId: getReservationById
       parameters:
-        - name: reservationId
-          in: path
-          description: ID da reserva
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/ReservationId"
       responses:
         "200":
-          description: Operação bem sucedida
+          description: Reserva retornada com sucesso
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Reservation"
         "400":
           description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Reserva não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    put:
+      tags:
+        - reservation
+      summary: Atualiza uma reserva existente
+      description: |-
+        Atualiza os dados de uma reserva existente, incluindo hóspede, quarto, datas de check-in/check-out
+        e status quando esses dados estiverem presentes no recurso enviado.
+      operationId: updateReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      requestBody:
+        $ref: "#/components/requestBodies/ReservationBody"
+      responses:
+        "200":
+          description: Reserva atualizada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reservation"
+        "400":
+          description: ID ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Reserva não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    delete:
+      tags:
+        - reservation
+      summary: Exclui uma reserva
+      description: Remove a reserva correspondente ao identificador informado.
+      operationId: deleteReservation
+      parameters:
+        - $ref: "#/components/parameters/ReservationId"
+      responses:
+        "200":
+          description: Reserva excluída com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Reserva não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -127,13 +224,7 @@ paths:
       description: Registra o check-in do hóspede e atualiza o status do quarto para ocupado (RF07).
       operationId: registerCheckIn
       parameters:
-        - name: reservationId
-          in: path
-          description: ID da reserva
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/ReservationId"
       responses:
         "200":
           description: Check-in realizado com sucesso
@@ -141,10 +232,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Reserva não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "422":
           description: Status inválido para check-in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -162,13 +267,7 @@ paths:
       description: Registra o check-out do hóspede e altera o status do quarto para sujo (RF08, RF09).
       operationId: registerCheckOut
       parameters:
-        - name: reservationId
-          in: path
-          description: ID da reserva
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/ReservationId"
       responses:
         "200":
           description: Check-out realizado com sucesso
@@ -176,8 +275,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Reserva não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -192,7 +301,7 @@ paths:
       tags:
         - room
       summary: Lista todos os quartos
-      description: Permite visualizar a lista de quartos e seus respectivos status.
+      description: Permite visualizar os quartos e seus respectivos status.
       operationId: getRooms
       parameters:
         - name: status
@@ -209,7 +318,7 @@ paths:
               - cleaning
       responses:
         "200":
-          description: Operação bem sucedida
+          description: Quartos retornados com sucesso
           content:
             application/json:
               schema:
@@ -225,29 +334,33 @@ paths:
       security:
         - api_key: []
 
-  /room/{roomId}:
-    get:
+    post:
       tags:
         - room
-      summary: Busca informações de um quarto pelo ID
-      operationId: getRoomById
-      parameters:
-        - name: roomId
-          in: path
-          description: ID do quarto
-          required: true
-          schema:
-            type: integer
-            format: int64
+      summary: Cadastra um novo quarto
+      description: Cadastra um quarto no sistema com número, tipo e status atual.
+      operationId: createRoom
+      requestBody:
+        $ref: "#/components/requestBodies/RoomBody"
       responses:
-        "200":
-          description: Operação bem sucedida
+        "201":
+          description: Quarto cadastrado com sucesso
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Room"
-        "404":
-          description: Quarto não encontrado
+        "400":
+          description: Dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -257,43 +370,116 @@ paths:
       security:
         - api_key: []
 
-    post:
+  /room/{roomId}:
+    get:
       tags:
         - room
-      summary: Atualiza o status de um quarto
-      description: Atualiza o status do quarto para registrar limpeza ou disponibilização (RF06, RF10, RF11).
-      operationId: updateRoomStatus
+      summary: Busca informações de um quarto pelo ID
+      description: Retorna um único quarto e seu status atual.
+      operationId: getRoomById
       parameters:
-        - name: roomId
-          in: path
-          description: ID do quarto a ser atualizado
-          required: true
-          schema:
-            type: integer
-            format: int64
-        - name: status
-          in: query
-          description: Novo status do quarto
-          required: true
-          schema:
-            type: string
-            enum:
-              - available
-              - reserved
-              - occupied
-              - dirty
-              - cleaning
+        - $ref: "#/components/parameters/RoomId"
       responses:
         "200":
-          description: Status atualizado com sucesso
+          description: Quarto retornado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Quarto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    put:
+      tags:
+        - room
+      summary: Atualiza os dados de um quarto
+      description: |-
+        Atualiza os dados do quarto. A atualização do campo status atende ao controle de reservado,
+        ocupado, sujo, em limpeza e disponível (RF06, RF10, RF11).
+      operationId: updateRoom
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      requestBody:
+        $ref: "#/components/requestBodies/RoomBody"
+      responses:
+        "200":
+          description: Quarto atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+        "400":
+          description: ID ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Quarto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    delete:
+      tags:
+        - room
+      summary: Exclui um quarto
+      description: Remove o quarto correspondente ao identificador informado.
+      operationId: deleteRoom
+      parameters:
+        - $ref: "#/components/parameters/RoomId"
+      responses:
+        "200":
+          description: Quarto excluído com sucesso
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApiResponse"
         "400":
-          description: Status inválido
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Quarto não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -304,6 +490,30 @@ paths:
         - api_key: []
 
   /guest:
+    get:
+      tags:
+        - guest
+      summary: Lista os hóspedes cadastrados
+      description: Retorna os hóspedes cadastrados no sistema.
+      operationId: getGuests
+      responses:
+        "200":
+          description: Hóspedes retornados com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Guest"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
     post:
       tags:
         - guest
@@ -311,14 +521,9 @@ paths:
       description: Registra os dados do hóspede no sistema (RF02).
       operationId: createGuest
       requestBody:
-        description: Objeto de cadastro do hóspede
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Guest"
-        required: true
+        $ref: "#/components/requestBodies/GuestBody"
       responses:
-        "200":
+        "201":
           description: Hóspede cadastrado com sucesso
           content:
             application/json:
@@ -326,6 +531,16 @@ paths:
                 $ref: "#/components/schemas/Guest"
         "400":
           description: Entrada inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -340,26 +555,29 @@ paths:
       tags:
         - guest
       summary: Busca um hóspede pelo ID
+      description: Retorna um único hóspede a partir de seu identificador.
       operationId: getGuestById
       parameters:
-        - name: guestId
-          in: path
-          description: ID do hóspede
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/GuestId"
       responses:
         "200":
-          description: Operação bem sucedida
+          description: Hóspede retornado com sucesso
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Guest"
         "400":
           description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Hóspede não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -373,29 +591,73 @@ paths:
       tags:
         - guest
       summary: Atualiza os dados de um hóspede
+      description: Atualiza os dados do hóspede correspondente ao identificador informado.
       operationId: updateGuest
       parameters:
-        - name: guestId
-          in: path
-          description: ID do hóspede a ser atualizado
-          required: true
-          schema:
-            type: integer
-            format: int64
+        - $ref: "#/components/parameters/GuestId"
       requestBody:
-        description: Dados atualizados do hóspede
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Guest"
-        required: true
+        $ref: "#/components/requestBodies/GuestBody"
       responses:
         "200":
           description: Hóspede atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guest"
         "400":
-          description: Dados inválidos
+          description: ID ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         "404":
           description: Hóspede não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    delete:
+      tags:
+        - guest
+      summary: Exclui um hóspede
+      description: Remove o hóspede correspondente ao identificador informado.
+      operationId: deleteGuest
+      parameters:
+        - $ref: "#/components/parameters/GuestId"
+      responses:
+        "200":
+          description: Hóspede excluído com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Hóspede não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
         default:
           description: Erro inesperado
           content:
@@ -417,6 +679,7 @@ components:
         id:
           type: integer
           format: int64
+          readOnly: true
           example: 10
         guest:
           $ref: "#/components/schemas/Guest"
@@ -433,12 +696,13 @@ components:
         status:
           type: string
           description: Status da reserva
-          example: "active"
+          example: active
           enum:
             - pending
             - active
             - completed
             - cancelled
+
     Guest:
       type: object
       required:
@@ -448,20 +712,22 @@ components:
         id:
           type: integer
           format: int64
+          readOnly: true
           example: 1
         name:
           type: string
-          example: "João Silva"
+          example: João Silva
         email:
           type: string
-          example: "joao.silva@email.com"
+          example: joao.silva@email.com
         document:
           type: string
           description: Documento de identificação (CPF, Passaporte)
-          example: "123.456.789-00"
+          example: 123.456.789-00
         phone:
           type: string
           example: "+5541999999999"
+
     Room:
       type: object
       required:
@@ -472,35 +738,41 @@ components:
         id:
           type: integer
           format: int64
+          readOnly: true
           example: 101
         number:
           type: string
           description: Número do quarto
-          example: "101A"
+          example: 101A
         roomType:
           type: string
           description: Sigla/tipo do quarto
-          example: "STD"
+          example: STD
         status:
           type: string
           description: Status atual do quarto
-          example: "available"
+          example: available
           enum:
             - available
             - reserved
             - occupied
             - dirty
             - cleaning
+
     ApiResponse:
       type: object
       properties:
         code:
           type: integer
           format: int32
+          example: 200
         type:
           type: string
+          example: success
         message:
           type: string
+          example: Operação realizada com sucesso
+
     Error:
       type: object
       required:
@@ -509,8 +781,64 @@ components:
       properties:
         code:
           type: string
+          example: VALIDATION_ERROR
         message:
           type: string
+          example: Dados inválidos fornecidos
+
+  parameters:
+    ReservationId:
+      name: reservationId
+      in: path
+      description: ID da reserva
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    RoomId:
+      name: roomId
+      in: path
+      description: ID do quarto
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+    GuestId:
+      name: guestId
+      in: path
+      description: ID do hóspede
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  requestBodies:
+    ReservationBody:
+      description: Dados da reserva
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Reservation"
+
+    RoomBody:
+      description: Dados do quarto
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Room"
+
+    GuestBody:
+      description: Dados do hóspede
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Guest"
+
   securitySchemes:
     api_key:
       type: apiKey

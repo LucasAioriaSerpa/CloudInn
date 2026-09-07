@@ -11,8 +11,6 @@ export const API_URLS = {
   health: import.meta.env.VITE_CLOUDINN_HEALTH_URL || "",
 };
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  "https://mock.apidog.com/m1/1365796-1370036-1426621";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 export const API_KEY = import.meta.env.VITE_API_KEY || "";
