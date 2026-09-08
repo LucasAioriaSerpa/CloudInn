@@ -149,8 +149,14 @@ async function checkHealth(options = {}) {
  * Handler HTTP da Azure Function de Health Check.
  */
 async function handler(request, context, options = {}) {
-  const logger = context?.log || console.log;
-  logger(
+  const log = (...args) => {
+    if (context && typeof context.log === "function") {
+      context.log(...args);
+    } else {
+      console.log(...args);
+    }
+  };
+  log(
     `[fc_gp_cloudInn_health] Processando requisição ${request?.method || "GET"}`,
   );
 

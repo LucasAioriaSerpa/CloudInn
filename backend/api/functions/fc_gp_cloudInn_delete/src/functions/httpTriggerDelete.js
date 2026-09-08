@@ -57,8 +57,14 @@ function getAzureMongoUri(options = {}) {
 }
 
 async function handler(request, context, options = {}) {
-  const logger = context?.log || console.log;
-  logger(
+  const log = (...args) => {
+    if (context && typeof context.log === "function") {
+      context.log(...args);
+    } else {
+      console.log(...args);
+    }
+  };
+  log(
     `[fc_gp_cloudInn_delete] Processando requisição ${request?.method || "DELETE"} para "${request?.url || ""}"`,
   );
 
