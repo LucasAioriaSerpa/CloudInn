@@ -200,17 +200,17 @@ async function handler(request, context, options = {}) {
     const client =
       options.client ||
       new MongoClient(mongoUri, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: true,
-          deprecationErrors: true,
-        },
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 15000,
+        maxPoolSize: 10,
+        minPoolSize: 0,
       });
 
     if (!options.client) {
       await client.connect();
     }
-    const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
+    const db = client.db(process.env.MONGO_DB_NAME || "db_cloudinn");
 
     // Limpeza total de coleções para o fluxo de restaurar dados demo
     if (isClearAll) {
@@ -218,8 +218,11 @@ async function handler(request, context, options = {}) {
       if (entity === "all" || !entity) {
         const resDel = await db.collection("reservations").deleteMany({});
         const guestDel = await db.collection("guests").deleteMany({});
+        const roomDel = await db.collection("rooms").deleteMany({});
         totalDeleted =
-          (resDel.deletedCount || 0) + (guestDel.deletedCount || 0);
+          (resDel.deletedCount || 0) +
+          (guestDel.deletedCount || 0) +
+          (roomDel.deletedCount || 0);
       } else {
         let coll = "reservations";
         if (entity === "guest" || entity === "guests") coll = "guests";
@@ -299,6 +302,30 @@ async function handler(request, context, options = {}) {
     if (context?.error) {
       context.error("[fc_gp_cloudInn_delete] Erro na exclusão:", error);
     }
+    const msg = error?.message || String(error);
+    const causeMsg = error?.cause?.message || "";
+    const fullErr = `${msg} ${causeMsg}`;
+
+    if (
+      fullErr.includes("SSL alert number 80") ||
+      fullErr.includes("tlsv1 alert internal error") ||
+      fullErr.includes("MongoServerSelectionError")
+    ) {
+      return {
+        status: 503,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: "503",
+          type: "MongoNetworkSecurityError",
+          message:
+            "Falha de conexão TLS com o MongoDB Atlas (SSL alert 80). O endereço IP de saída da Azure Function não está autorizado no firewall (Network Access) do MongoDB Atlas.",
+          solution:
+            "Acesse MongoDB Atlas (https://cloud.mongodb.com) -> Security -> Network Access -> Add IP Address -> 'Allow Access from Anywhere' (0.0.0.0/0) -> Confirm. Aguarde cerca de 1 minuto para propagação.",
+          technicalDetails: msg,
+        }),
+      };
+    }
+
     return {
       status: 500,
       headers: corsHeaders,

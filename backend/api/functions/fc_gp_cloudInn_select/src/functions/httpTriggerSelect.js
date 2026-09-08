@@ -175,17 +175,17 @@ async function handler(request, context, options = {}) {
     const client =
       options.client ||
       new MongoClient(mongoUri, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: true,
-          deprecationErrors: true,
-        },
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 15000,
+        maxPoolSize: 10,
+        minPoolSize: 0,
       });
 
     if (!options.client) {
       await client.connect();
     }
-    const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
+    const db = client.db(process.env.MONGO_DB_NAME || "db_cloudinn");
 
     // 1. Consulta de Reservas (RF01, RF03, RF04, RF05, Swagger /reservation e /reservation/{id})
     if (entity === "reservation" || entity === "reservations") {
@@ -200,9 +200,8 @@ async function handler(request, context, options = {}) {
           projection: { _id: 0 },
         });
 
-        await client.close();
-
         if (!item) {
+          await client.close();
           return {
             status: 404,
             headers: corsHeaders,
@@ -213,10 +212,30 @@ async function handler(request, context, options = {}) {
           };
         }
 
+        // Enriquecer com dados do hóspede e quarto se estiverem separados por ID
+        let guest = item.guest;
+        if (!guest && item.guestId) {
+          guest = await db
+            .collection("guests")
+            .findOne({ id: item.guestId }, { projection: { _id: 0 } });
+        }
+        let room = item.room;
+        if (!room && item.roomId) {
+          room = await db
+            .collection("rooms")
+            .findOne({ id: item.roomId }, { projection: { _id: 0 } });
+        }
+
+        await client.close();
+
         return {
           status: 200,
           headers: corsHeaders,
-          body: JSON.stringify(item),
+          body: JSON.stringify({
+            ...item,
+            guest: guest || item.guest,
+            room: room || item.room,
+          }),
         };
       }
 
@@ -224,20 +243,58 @@ async function handler(request, context, options = {}) {
       if (statusParam && statusParam !== "all") {
         filter.status = statusParam;
       }
+
+      // Consulta de hóspedes e quartos para enriquecimento e busca
+      const allGuests = await db
+        .collection("guests")
+        .find({}, { projection: { _id: 0 } })
+        .toArray();
+      const allRooms = await db
+        .collection("rooms")
+        .find({}, { projection: { _id: 0 } })
+        .toArray();
+      const guestMap = new Map(allGuests.map((g) => [g.id, g]));
+      const roomMap = new Map(allRooms.map((r) => [r.id, r]));
+
       if (searchParam) {
         const regex = new RegExp(searchParam, "i");
+        const matchingGuestIds = allGuests
+          .filter(
+            (g) =>
+              regex.test(g.name || "") ||
+              regex.test(g.document || "") ||
+              regex.test(g.email || ""),
+          )
+          .map((g) => g.id);
+
+        const matchingRoomIds = allRooms
+          .filter((r) => regex.test(r.number || ""))
+          .map((r) => r.id);
+
         filter.$or = [
           { "guest.name": regex },
           { "guest.document": regex },
           { "room.number": regex },
+          { guestId: { $in: matchingGuestIds } },
+          { roomId: { $in: matchingRoomIds } },
         ];
       }
 
-      const items = await collection
+      const rawItems = await collection
         .find(filter, { projection: { _id: 0 } })
         .sort({ id: -1 })
         .toArray();
       await client.close();
+
+      const items = rawItems.map((r) => {
+        const guest = guestMap.get(r.guestId) || r.guest;
+        const room = roomMap.get(r.roomId) || r.room;
+        return {
+          ...r,
+          guest: guest || r.guest,
+          room: room || r.room,
+        };
+      });
 
       return {
         status: 200,
@@ -368,6 +425,30 @@ async function handler(request, context, options = {}) {
     if (context?.error) {
       context.error("[fc_gp_cloudInn_select] Erro na consulta:", error);
     }
+    const msg = error?.message || String(error);
+    const causeMsg = error?.cause?.message || "";
+    const fullErr = `${msg} ${causeMsg}`;
+
+    if (
+      fullErr.includes("SSL alert number 80") ||
+      fullErr.includes("tlsv1 alert internal error") ||
+      fullErr.includes("MongoServerSelectionError")
+    ) {
+      return {
+        status: 503,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: "503",
+          type: "MongoNetworkSecurityError",
+          message:
+            "Falha de conexão TLS com o MongoDB Atlas (SSL alert 80). O endereço IP de saída da Azure Function não está autorizado no firewall (Network Access) do MongoDB Atlas.",
+          solution:
+            "Acesse MongoDB Atlas (https://cloud.mongodb.com) -> Security -> Network Access -> Add IP Address -> 'Allow Access from Anywhere' (0.0.0.0/0) -> Confirm. Aguarde cerca de 1 minuto para propagação.",
+          technicalDetails: msg,
+        }),
+      };
+    }
+
     return {
       status: 500,
       headers: corsHeaders,

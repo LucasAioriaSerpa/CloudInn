@@ -121,7 +121,7 @@ async function checkHealth(options = {}) {
   const startTime = Date.now();
   const mongoUri = getAzureMongoUri(options);
 
-  const dbName = process.env.MONGO_DB_NAME || "cloudinn";
+  const dbName = process.env.MONGO_DB_NAME || "db_cloudinn";
 
   let dbStatus = "NOT_CONFIGURED";
   let dbLatencyMs = null;
@@ -134,11 +134,6 @@ async function checkHealth(options = {}) {
     try {
       if (!client) {
         client = new MongoClient(mongoUri, {
-          serverApi: {
-            version: ServerApiVersion.v1,
-            strict: true,
-            deprecationErrors: true,
-          },
           serverSelectionTimeoutMS: 3000,
           connectTimeoutMS: 3000,
         });
@@ -152,7 +147,17 @@ async function checkHealth(options = {}) {
       dbStatus = "CONNECTED";
     } catch (err) {
       dbStatus = "UNREACHABLE";
-      dbError = err.message || "Falha de conexão com MongoDB";
+      const fullMsg = `${err?.message || ""} ${err?.cause?.message || ""}`;
+      if (
+        fullMsg.includes("SSL alert number 80") ||
+        fullMsg.includes("tlsv1 alert internal error") ||
+        err?.name === "MongoServerSelectionError"
+      ) {
+        dbError =
+          "Falha TLS (SSL alert 80): IP da Azure Function não autorizado no firewall do MongoDB Atlas (adicione 0.0.0.0/0 em Network Access).";
+      } else {
+        dbError = err.message || "Falha de conexão com MongoDB";
+      }
     } finally {
       if (shouldClose && client) {
         try {

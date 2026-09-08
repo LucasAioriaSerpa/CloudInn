@@ -137,13 +137,15 @@ function createMockDb(initialData = {}) {
         }
         return { acknowledged: true, insertedCount: 0 };
       },
+      createIndex: async () => "index_created",
+      createIndexes: async () => ["index_created"],
     };
   };
 
   const client = {
     connect: async () => {},
     close: async () => {},
-    db: (_dbName = "cloudinn") => ({
+    db: (_dbName = "db_cloudinn") => ({
       collection: getCollection,
       command: async (cmd) => {
         if (cmd.ping) return { ok: 1 };

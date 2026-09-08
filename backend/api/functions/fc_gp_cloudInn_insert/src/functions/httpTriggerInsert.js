@@ -181,17 +181,37 @@ async function handler(request, context, options = {}) {
     const client =
       options.client ||
       new MongoClient(mongoUri, {
-        serverApi: {
-          version: ServerApiVersion.v1,
-          strict: true,
-          deprecationErrors: true,
-        },
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 15000,
+        maxPoolSize: 10,
+        minPoolSize: 0,
       });
 
     if (!options.client) {
       await client.connect();
     }
-    const db = client.db(process.env.MONGO_DB_NAME || "cloudinn");
+    const db = client.db(process.env.MONGO_DB_NAME || "db_cloudinn");
+
+    // Garante criação dos índices no MongoDB
+    if (typeof db.collection === "function") {
+      try {
+        const guestsColl = db.collection("guests");
+        const roomsColl = db.collection("rooms");
+        const resColl = db.collection("reservations");
+        if (typeof guestsColl.createIndex === "function") {
+          await Promise.allSettled([
+            guestsColl.createIndex({ id: 1 }, { unique: true }),
+            guestsColl.createIndex({ document: 1 }, { unique: true }),
+            roomsColl.createIndex({ id: 1 }, { unique: true }),
+            roomsColl.createIndex({ number: 1 }, { unique: true }),
+            resColl.createIndex({ id: 1 }, { unique: true }),
+            resColl.createIndex({ guestId: 1 }),
+            resColl.createIndex({ roomId: 1 }),
+          ]);
+        }
+      } catch (_) {}
+    }
 
     if (isReservation) {
       // Validação estrita conforme Swagger: required: [guest, checkInDate, checkOutDate]
@@ -246,7 +266,7 @@ async function handler(request, context, options = {}) {
         ? body.status
         : "pending";
 
-      // Gerar ID numérico único sequencial ou timestamp
+      // Gerar ID numérico único sequencial para reserva
       const lastRes = await db
         .collection("reservations")
         .find()
@@ -256,73 +276,110 @@ async function handler(request, context, options = {}) {
       const nextId =
         lastRes.length > 0 && typeof lastRes[0].id === "number"
           ? lastRes[0].id + 1
-          : Date.now();
+          : 10;
 
-      const reservation = {
-        id: body.id || nextId,
-        guest: {
-          id: body.guest.id || Date.now(),
-          name: String(body.guest.name).trim(),
-          email: body.guest.email ? String(body.guest.email).trim() : undefined,
-          document: String(body.guest.document).trim(),
-          phone: body.guest.phone ? String(body.guest.phone).trim() : undefined,
-        },
-        room: body.room
-          ? {
-              id: body.room.id || undefined,
-              number: String(body.room.number),
-              roomType: String(body.room.roomType || "STD"),
-              status: String(
-                body.room.status ||
-                  (status === "active" ? "occupied" : "reserved"),
-              ),
-            }
-          : undefined,
+      // 1. Identificar ou cadastrar o Hóspede na coleção 'guests'
+      let guestId = body.guest.id ? Number(body.guest.id) : null;
+      if (!guestId) {
+        const existingGuest = await db
+          .collection("guests")
+          .findOne({ document: String(body.guest.document).trim() });
+        if (existingGuest && typeof existingGuest.id === "number") {
+          guestId = existingGuest.id;
+        } else {
+          const lastGuest = await db
+            .collection("guests")
+            .find()
+            .sort({ id: -1 })
+            .limit(1)
+            .toArray();
+          guestId =
+            lastGuest.length > 0 && typeof lastGuest[0].id === "number"
+              ? lastGuest[0].id + 1
+              : 1;
+        }
+      }
+
+      const guestDoc = {
+        id: Number(guestId),
+        name: String(body.guest.name).trim(),
+        document: String(body.guest.document).trim(),
+        email: body.guest.email ? String(body.guest.email).trim() : "",
+        phone: body.guest.phone ? String(body.guest.phone).trim() : "",
+      };
+
+      await db.collection("guests").updateOne(
+        { document: guestDoc.document },
+        { $set: guestDoc },
+        { upsert: true },
+      );
+
+      // 2. Identificar ou cadastrar o Quarto na coleção 'rooms'
+      let roomId = body.room?.id
+        ? Number(body.room.id)
+        : body.roomId
+          ? Number(body.roomId)
+          : null;
+      let roomNumber = body.room?.number
+        ? String(body.room.number).trim()
+        : "101A";
+      let roomType = body.room?.roomType
+        ? String(body.room.roomType).trim()
+        : "STD";
+      let roomStatus =
+        status === "active"
+          ? "occupied"
+          : body.room?.status || "reserved";
+
+      if (!roomId) {
+        const existingRoom = await db
+          .collection("rooms")
+          .findOne({ number: roomNumber });
+        if (existingRoom && typeof existingRoom.id === "number") {
+          roomId = existingRoom.id;
+          roomType = existingRoom.roomType || roomType;
+        } else {
+          const parsedNum = parseInt(roomNumber, 10);
+          roomId = !isNaN(parsedNum) && parsedNum > 0 ? parsedNum : 101;
+        }
+      }
+
+      const roomDoc = {
+        id: Number(roomId),
+        number: roomNumber,
+        roomType: roomType,
+        status: roomStatus,
+      };
+
+      await db.collection("rooms").updateOne(
+        { number: roomDoc.number },
+        { $set: roomDoc },
+        { upsert: true },
+      );
+
+      // 3. Documento da Reserva exatamente conforme especificação solicitada:
+      // { "id": 10, "guestId": 1, "roomId": 101, "checkInDate": "...", "checkOutDate": "...", "status": "pending" }
+      const reservationDoc = {
+        id: Number(body.id || nextId),
+        guestId: Number(guestId),
+        roomId: Number(roomId),
         checkInDate: checkIn.toISOString(),
         checkOutDate: checkOut.toISOString(),
         status: status,
-        createdAt: new Date(),
       };
 
-      await db.collection("reservations").insertOne(reservation);
-
-      // Sincroniza quarto associado se informado
-      if (body.room?.number) {
-        await db.collection("rooms").updateOne(
-          { number: body.room.number },
-          {
-            $set: {
-              status: status === "active" ? "occupied" : "reserved",
-              updatedAt: new Date(),
-            },
-          },
-          { upsert: false },
-        );
-      }
-
-      // Sincroniza hóspede no catálogo
-      if (body.guest?.document) {
-        await db.collection("guests").updateOne(
-          { document: body.guest.document },
-          {
-            $set: {
-              id: reservation.guest.id,
-              name: reservation.guest.name,
-              email: reservation.guest.email,
-              phone: reservation.guest.phone,
-              updatedAt: new Date(),
-            },
-          },
-          { upsert: true },
-        );
-      }
+      await db.collection("reservations").insertOne(reservationDoc);
 
       await client.close();
 
       return {
         status: 200,
         headers: corsHeaders,
-        body: JSON.stringify(reservation),
+        body: JSON.stringify({
+          ...reservationDoc,
+          guest: guestDoc,
+          room: roomDoc,
+        }),
       };
     }
 
@@ -350,24 +407,23 @@ async function handler(request, context, options = {}) {
       const nextId =
         lastGuest.length > 0 && typeof lastGuest[0].id === "number"
           ? lastGuest[0].id + 1
-          : Date.now();
+          : 1;
 
-      const guest = {
-        id: body.id || nextId,
+      const guestDoc = {
+        id: Number(body.id || nextId),
         name: String(body.name).trim(),
         document: String(body.document).trim(),
-        email: body.email ? String(body.email).trim() : undefined,
-        phone: body.phone ? String(body.phone).trim() : undefined,
-        createdAt: new Date(),
+        email: body.email ? String(body.email).trim() : "",
+        phone: body.phone ? String(body.phone).trim() : "",
       };
 
-      await db.collection("guests").insertOne(guest);
+      await db.collection("guests").insertOne(guestDoc);
       await client.close();
 
       return {
         status: 200,
         headers: corsHeaders,
-        body: JSON.stringify(guest),
+        body: JSON.stringify(guestDoc),
       };
     }
 
@@ -386,21 +442,31 @@ async function handler(request, context, options = {}) {
         };
       }
 
-      const room = {
-        id: body.id || Date.now(),
+      const lastRoom = await db
+        .collection("rooms")
+        .find()
+        .sort({ id: -1 })
+        .limit(1)
+        .toArray();
+      const nextRoomId =
+        lastRoom.length > 0 && typeof lastRoom[0].id === "number"
+          ? lastRoom[0].id + 1
+          : 101;
+
+      const roomDoc = {
+        id: Number(body.id || nextRoomId),
         number: String(body.number).trim(),
         roomType: String(body.roomType).trim(),
         status: String(body.status).trim(),
-        createdAt: new Date(),
       };
 
-      await db.collection("rooms").insertOne(room);
+      await db.collection("rooms").insertOne(roomDoc);
       await client.close();
 
       return {
         status: 200,
         headers: corsHeaders,
-        body: JSON.stringify(room),
+        body: JSON.stringify(roomDoc),
       };
     }
 
@@ -417,6 +483,30 @@ async function handler(request, context, options = {}) {
     if (context?.error) {
       context.error("[fc_gp_cloudInn_insert] Erro na inserção:", error);
     }
+    const msg = error?.message || String(error);
+    const causeMsg = error?.cause?.message || "";
+    const fullErr = `${msg} ${causeMsg}`;
+
+    if (
+      fullErr.includes("SSL alert number 80") ||
+      fullErr.includes("tlsv1 alert internal error") ||
+      fullErr.includes("MongoServerSelectionError")
+    ) {
+      return {
+        status: 503,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          code: "503",
+          type: "MongoNetworkSecurityError",
+          message:
+            "Falha de conexão TLS com o MongoDB Atlas (SSL alert 80). O endereço IP de saída da Azure Function não está autorizado no firewall (Network Access) do MongoDB Atlas.",
+          solution:
+            "Acesse MongoDB Atlas (https://cloud.mongodb.com) -> Security -> Network Access -> Add IP Address -> 'Allow Access from Anywhere' (0.0.0.0/0) -> Confirm. Aguarde cerca de 1 minuto para propagação.",
+          technicalDetails: msg,
+        }),
+      };
+    }
+
     return {
       status: 500,
       headers: corsHeaders,
