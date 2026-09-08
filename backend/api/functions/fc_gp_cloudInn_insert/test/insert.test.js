@@ -227,4 +227,36 @@ describe("fc_gp_cloudInn_insert - Testes Unitários", () => {
     assert.equal(body.number, "305");
     assert.equal(collections.rooms.length, 1);
   });
+
+  test("Deve aceitar e sanitizar MONGO_BD_URI com aspas ou prefixo sem causar MongoParseError", async () => {
+    process.env.CUSTOMCONNSTR_MONGO_BD_URI = '"mongodb+srv://user:pass@cluster.mongodb.net/cloudinn"';
+    const { client } = createMockDb();
+    const payload = { number: "101", roomType: "SGL", status: "available" };
+    const req = createMockRequest({
+      method: "POST",
+      query: { entity: "room" },
+      body: payload,
+    });
+    const context = createMockContext();
+
+    const res = await handler(req, context, { client, body: payload });
+    assert.equal(res.status, 200);
+  });
+
+  test("Deve rejeitar esquemas inválidos sem lançar MongoParseError não tratado", async () => {
+    delete process.env.CUSTOMCONNSTR_MONGO_BD_URI;
+    process.env.MONGO_BD_URI = "invalid-scheme://fake-host:27017";
+    const req = createMockRequest({
+      method: "POST",
+      query: { entity: "room" },
+      body: { number: "102" },
+    });
+    const context = createMockContext();
+
+    const res = await handler(req, context);
+    assert.equal(res.status, 500);
+    const body = JSON.parse(res.body);
+    assert.equal(body.code, "500");
+    assert.match(body.message, /connection string do MongoDB/);
+  });
 });

@@ -9,48 +9,109 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
-function getAzureMongoUri(options = {}) {
-  if (options.mongoUri) return options.mongoUri;
+function sanitizeAndExtractMongoUri(raw) {
+  if (!raw || typeof raw !== "string") return null;
+  let s = raw.trim();
 
-  // 1. Azure Connection Strings (injetadas automaticamente pelo Azure com o prefixo CUSTOMCONNSTR_)
-  const azureConnStr =
-    process.env.CUSTOMCONNSTR_MONGO_BD_URI ||
-    process.env.CUSTOMCONNSTR_MONGO_URI ||
-    process.env.CUSTOMCONNSTR_MONGODB_URI ||
-    process.env.CUSTOMCONNSTR_MongoDB ||
-    process.env.CUSTOMCONNSTR_MongoDbConnection ||
-    process.env.CUSTOMCONNSTR_defaultConnection;
-  if (azureConnStr) return azureConnStr;
+  // Remove aspas envolventes ("...", '...', \"...\")
+  if (
+    (s.startsWith('"') && s.endsWith('"')) ||
+    (s.startsWith("'") && s.endsWith("'"))
+  ) {
+    s = s.slice(1, -1).trim();
+  }
+  if (s.startsWith('\\"') && s.endsWith('\\"')) {
+    s = s.slice(2, -2).trim();
+  }
+
+  // Verifica se inicia diretamente com mongodb:// ou mongodb+srv://
+  if (s.startsWith("mongodb://") || s.startsWith("mongodb+srv://")) {
+    return s;
+  }
+
+  // Se contiver mongodb:// ou mongodb+srv:// no corpo da string (ex: MONGO_BD_URI=mongodb+srv://...)
+  const match = s.match(/(mongodb(?:\+srv)?:\/\/[^\s"']+)/i);
+  if (match && match[1]) {
+    let extracted = match[1].trim();
+    if (
+      (extracted.startsWith('"') && extracted.endsWith('"')) ||
+      (extracted.startsWith("'") && extracted.endsWith("'"))
+    ) {
+      extracted = extracted.slice(1, -1).trim();
+    }
+    if (
+      extracted.startsWith("mongodb://") ||
+      extracted.startsWith("mongodb+srv://")
+    ) {
+      return extracted;
+    }
+  }
+
+  return null;
+}
+
+function maskMongoUri(uri) {
+  if (!uri || typeof uri !== "string") return "";
+  try {
+    return uri.replace(/:\/\/([^:]+):([^@]+)@/, "://$1:****@");
+  } catch {
+    return "mongodb://***";
+  }
+}
+
+function getAzureMongoUri(options = {}) {
+  if (options.mongoUri !== undefined) {
+    if (!options.mongoUri) return undefined;
+    return sanitizeAndExtractMongoUri(options.mongoUri) || undefined;
+  }
+
+  // 1. Azure Connection Strings (injetadas automaticamente pelo Azure com o prefixo CUSTOMCONNSTR_ ou SQLAZURECONNSTR_)
+  const azureConnCandidates = [
+    process.env.CUSTOMCONNSTR_MONGO_BD_URI,
+    process.env.CUSTOMCONNSTR_MONGO_URI,
+    process.env.CUSTOMCONNSTR_MONGODB_URI,
+    process.env.CUSTOMCONNSTR_MongoDB,
+    process.env.CUSTOMCONNSTR_MongoDbConnection,
+    process.env.CUSTOMCONNSTR_defaultConnection,
+    process.env.SQLAZURECONNSTR_MONGO_BD_URI,
+    process.env.SQLAZURECONNSTR_MongoDB,
+  ];
+  for (const candidate of azureConnCandidates) {
+    const sanitized = sanitizeAndExtractMongoUri(candidate);
+    if (sanitized) return sanitized;
+  }
 
   // 2. Variáveis de ambiente / App Settings diretas
-  const directEnv =
-    process.env.MONGO_BD_URI ||
-    process.env.MONGO_URI ||
-    process.env.MONGODB_URI ||
-    process.env.MongoDbConnection ||
-    process.env.MongoDB;
-  if (directEnv) return directEnv;
+  const directCandidates = [
+    process.env.MONGO_BD_URI,
+    process.env.MONGO_URI,
+    process.env.MONGODB_URI,
+    process.env.MongoDbConnection,
+    process.env.MongoDB,
+    process.env.MONGO_URL,
+    process.env.MONGODB_URL,
+  ];
+  for (const candidate of directCandidates) {
+    const sanitized = sanitizeAndExtractMongoUri(candidate);
+    if (sanitized) return sanitized;
+  }
 
   // 3. Varredura dinâmica para Connection Strings ou variáveis contendo URI MongoDB
   for (const [key, val] of Object.entries(process.env)) {
     if (
-      (key.startsWith("CUSTOMCONNSTR_") ||
-        key.toUpperCase().includes("MONGO") ||
-        key.toUpperCase().includes("CONN")) &&
-      typeof val === "string" &&
-      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
+      key.startsWith("CUSTOMCONNSTR_") ||
+      key.toUpperCase().includes("MONGO") ||
+      key.toUpperCase().includes("CONN") ||
+      key.toUpperCase().includes("DB")
     ) {
-      return val;
+      const sanitized = sanitizeAndExtractMongoUri(val);
+      if (sanitized) return sanitized;
     }
   }
 
   for (const val of Object.values(process.env)) {
-    if (
-      typeof val === "string" &&
-      (val.startsWith("mongodb://") || val.startsWith("mongodb+srv://"))
-    ) {
-      return val;
-    }
+    const sanitized = sanitizeAndExtractMongoUri(val);
+    if (sanitized) return sanitized;
   }
 
   return undefined;
@@ -78,16 +139,27 @@ async function handler(request, context, options = {}) {
   try {
     const mongoUri = getAzureMongoUri(options);
     if (!mongoUri) {
+      const checkedKeys = Object.keys(process.env).filter(
+        (k) =>
+          k.startsWith("CUSTOMCONNSTR_") ||
+          k.toUpperCase().includes("MONGO") ||
+          k.toUpperCase().includes("CONN"),
+      );
+      log(
+        `[fc_gp_cloudInn_delete] AVISO: URI do MongoDB não encontrada ou inválida. Variáveis com nomes relacionados no Azure: ${checkedKeys.length > 0 ? checkedKeys.join(", ") : "nenhuma"}`,
+      );
       return {
         status: 500,
         headers: corsHeaders,
         body: JSON.stringify({
           code: "500",
           message:
-            "A connection string do MongoDB não foi encontrada no Azure (Connection strings ou Environment variables: MONGO_BD_URI / CUSTOMCONNSTR_*).",
+            "A connection string do MongoDB não foi encontrada ou não possui formato válido ('mongodb://' ou 'mongodb+srv://') neste Azure Function App. Configure MONGO_BD_URI ou Connection String no Azure Portal sem aspas.",
+          detectedEnvKeys: checkedKeys,
         }),
       };
     }
+    log(`[fc_gp_cloudInn_delete] Conectando ao MongoDB: ${maskMongoUri(mongoUri)}`);
 
     const query = request?.query || new URLSearchParams();
     const body =
