@@ -24,27 +24,42 @@ function sanitizeAndExtractMongoUri(raw) {
     s = s.slice(2, -2).trim();
   }
 
+  let extracted = null;
   // Verifica se inicia diretamente com mongodb:// ou mongodb+srv://
   if (s.startsWith("mongodb://") || s.startsWith("mongodb+srv://")) {
-    return s;
+    extracted = s;
+  } else {
+    // Se contiver mongodb:// ou mongodb+srv:// no corpo da string (ex: MONGO_BD_URI=mongodb+srv://...)
+    const match = s.match(/(mongodb(?:\+srv)?:\/\/[^\s"']+)/i);
+    if (match && match[1]) {
+      extracted = match[1].trim();
+      if (
+        (extracted.startsWith('"') && extracted.endsWith('"')) ||
+        (extracted.startsWith("'") && extracted.endsWith("'"))
+      ) {
+        extracted = extracted.slice(1, -1).trim();
+      }
+    }
   }
 
-  // Se contiver mongodb:// ou mongodb+srv:// no corpo da string (ex: MONGO_BD_URI=mongodb+srv://...)
-  const match = s.match(/(mongodb(?:\+srv)?:\/\/[^\s"']+)/i);
-  if (match && match[1]) {
-    let extracted = match[1].trim();
-    if (
-      (extracted.startsWith('"') && extracted.endsWith('"')) ||
-      (extracted.startsWith("'") && extracted.endsWith("'"))
-    ) {
-      extracted = extracted.slice(1, -1).trim();
-    }
-    if (
-      extracted.startsWith("mongodb://") ||
-      extracted.startsWith("mongodb+srv://")
-    ) {
-      return extracted;
-    }
+  if (
+    extracted &&
+    (extracted.startsWith("mongodb://") || extracted.startsWith("mongodb+srv://"))
+  ) {
+    try {
+      const urlObj = new URL(extracted);
+      if (!urlObj.pathname || urlObj.pathname === "/") {
+        urlObj.pathname = "/db_cloudinn";
+        if (!urlObj.searchParams.has("retryWrites")) {
+          urlObj.searchParams.set("retryWrites", "true");
+        }
+        if (!urlObj.searchParams.has("w")) {
+          urlObj.searchParams.set("w", "majority");
+        }
+        return urlObj.toString();
+      }
+    } catch (_) {}
+    return extracted;
   }
 
   return null;
