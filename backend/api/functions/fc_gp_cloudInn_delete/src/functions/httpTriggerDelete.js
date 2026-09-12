@@ -159,7 +159,9 @@ async function handler(request, context, options = {}) {
         }),
       };
     }
-    log(`[fc_gp_cloudInn_delete] Conectando ao MongoDB: ${maskMongoUri(mongoUri)}`);
+    log(
+      `[fc_gp_cloudInn_delete] Conectando ao MongoDB: ${maskMongoUri(mongoUri)}`,
+    );
 
     const query = request?.query || new URLSearchParams();
     const body =
