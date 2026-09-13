@@ -10,10 +10,12 @@
     "build": "npm run build --workspace=frontend",
     "lint": "node -e \"console.log('Lint check completed')\""
   },
+  "overrides": {
+    "qs": "^6.16.0"
+  },
   "allowScripts": {
-    "@google/genai@2.18.0": true,
-    "protobufjs@7.6.5": true,
-    "esbuild@0.25.12": true,
-    "esbuild@0.28.2": true
+    "@google/genai": true,
+    "protobufjs": true,
+    "esbuild": true
   }
 }
