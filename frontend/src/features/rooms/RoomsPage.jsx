@@ -13,9 +13,11 @@ import {
   Filter,
 } from "lucide-react";
 import { useHotel } from "../../context/HotelContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { RoomCard } from "./components/RoomCard.jsx";
 import { RoomTable } from "./components/RoomTable.jsx";
 import { RoomStatusModal } from "./components/RoomStatusModal.jsx";
+import { HousekeepingPage } from "../housekeeping/HousekeepingPage.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { Select } from "../../components/common/Select.jsx";
@@ -26,11 +28,13 @@ import {
   ROOM_STATUS_LABELS,
   ROOM_TYPES,
 } from "../../config/constants.js";
+import { motion, AnimatePresence } from "motion/react";
 
 export function RoomsPage() {
   const { rooms, loading, refreshData, handleUpdateRoomStatus } = useHotel();
+  const { permissions } = useAuth();
 
-  const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'table'
+  const [viewMode, setViewMode] = useState("grid"); // 'grid' | 'table' | 'housekeeping'
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -135,6 +139,21 @@ export function RoomsPage() {
             >
               <List className="w-4 h-4" />
             </button>
+            {permissions?.canViewHousekeepingBoard && (
+              <button
+                type="button"
+                onClick={() => setViewMode("housekeeping")}
+                className={`px-2 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1 transition-colors ${
+                  viewMode === "housekeeping"
+                    ? "bg-[#14248A] text-white shadow-2xs"
+                    : "text-[#28262C]/70 hover:text-[#14248A]"
+                }`}
+                title="Quadro da Governança (Sujos e Limpos)"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">Quadro Governança</span>
+              </button>
+            )}
           </div>
 
           <Button
@@ -175,8 +194,8 @@ export function RoomsPage() {
 
       {/* Filter Tabs & Search Bar */}
       <div className="space-y-3">
-        {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#D4C2FC]/50">
+        {/* Status Tabs com Indicador Deslizante Animado */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#D4C2FC]/50 relative">
           {statusTabs.map((tab) => {
             const isActive = statusFilter === tab.id;
             return (
@@ -184,15 +203,22 @@ export function RoomsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-[2px] flex items-center gap-2 ${
+                className={`relative px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
                   isActive
-                    ? "border-[#14248A] text-[#14248A] bg-white"
-                    : "border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50"
+                    ? "text-[#14248A]"
+                    : "text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/40 rounded-t-lg"
                 }`}
               >
-                <span>{tab.label}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeRoomTabIndicator"
+                    className="absolute inset-0 bg-white rounded-t-lg border-b-2 border-[#14248A] shadow-xs z-0"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  className={`relative z-10 text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                     isActive
                       ? "bg-[#14248A] text-white"
                       : "bg-[#D4C2FC]/60 text-[#28262C]"
@@ -231,8 +257,12 @@ export function RoomsPage() {
         </div>
       </div>
 
-      {/* Main Content (Grid vs Table) */}
-      {loading && rooms.length === 0 ? (
+      {/* Main Content (Grid vs Table vs Housekeeping Board) */}
+      {viewMode === "housekeeping" ? (
+        <div className="pt-2">
+          <HousekeepingPage />
+        </div>
+      ) : loading && rooms.length === 0 ? (
         <LoadingState message="Carregando quartos..." />
       ) : filteredRooms.length === 0 ? (
         <EmptyState

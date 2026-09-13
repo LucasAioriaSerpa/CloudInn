@@ -4,21 +4,25 @@
 import React, { useState, useMemo } from "react";
 import { Plus, Search, Filter, CalendarDays, RefreshCw } from "lucide-react";
 import { useHotel } from "../../context/HotelContext.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 import { ReservationTable } from "./components/ReservationTable.jsx";
 import { ReservationFormModal } from "./components/ReservationFormModal.jsx";
 import { ReservationDetailModal } from "./components/ReservationDetailModal.jsx";
 import { CheckInModal } from "./components/CheckInModal.jsx";
 import { CheckOutModal } from "./components/CheckOutModal.jsx";
+import { ReceptionDeskBanner } from "./components/ReceptionDeskBanner.jsx";
 import { ConfirmModal } from "../../components/common/ConfirmModal.jsx";
 import { Button } from "../../components/common/Button.jsx";
 import { Input } from "../../components/common/Input.jsx";
 import { EmptyState } from "../../components/common/EmptyState.jsx";
 import { LoadingState } from "../../components/common/LoadingState.jsx";
 import { RESERVATION_STATUS } from "../../config/constants.js";
+import { motion, AnimatePresence } from "motion/react";
 
 export function ReservationsPage() {
-  const { reservations, loading, refreshData, handleDeleteReservation } =
+  const { reservations, rooms, loading, refreshData, handleDeleteReservation } =
     useHotel();
+  const { user, permissions } = useAuth();
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState("");
@@ -85,15 +89,23 @@ export function ReservationsPage() {
 
   return (
     <div className="space-y-6">
+      {/* Front Desk & Quick Operations Banner for Receptionist & Managers */}
+      <ReceptionDeskBanner
+        reservations={reservations}
+        rooms={rooms}
+        onCheckIn={(res) => setSelectedResForCheckIn(res)}
+        onCheckOut={(res) => setSelectedResForCheckOut(res)}
+        onNewReservation={() => setIsFormOpen(true)}
+      />
+
       {/* Top Header & Action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-[#28262C] font-heading">
-            Gestão de Reservas
+            Todas as Reservas do Hotel
           </h2>
           <p className="text-xs sm:text-sm text-[#28262C]/65 mt-0.5">
-            Controle de estadias, confirmação de entradas e liberação de
-            check-outs
+            Controle de estadias, confirmação de entradas e liberação de check-outs
           </p>
         </div>
 
@@ -118,8 +130,8 @@ export function ReservationsPage() {
 
       {/* Filter Tabs & Search Bar */}
       <div className="space-y-3">
-        {/* Status Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#D4C2FC]/50">
+        {/* Status Tabs com Indicador Animado */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-[#D4C2FC]/50 relative">
           {tabs.map((tab) => {
             const isActive = statusFilter === tab.id;
             return (
@@ -127,15 +139,22 @@ export function ReservationsPage() {
                 key={tab.id}
                 type="button"
                 onClick={() => setStatusFilter(tab.id)}
-                className={`px-3.5 py-2 rounded-t-lg text-xs font-semibold whitespace-nowrap transition-all border-b-2 -mb-[2px] flex items-center gap-2 ${
+                className={`relative px-3.5 py-2 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-2 cursor-pointer ${
                   isActive
-                    ? "border-[#14248A] text-[#14248A] bg-white"
-                    : "border-transparent text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/50"
+                    ? "text-[#14248A]"
+                    : "text-[#28262C]/60 hover:text-[#28262C] hover:bg-white/40 rounded-t-lg"
                 }`}
               >
-                <span>{tab.label}</span>
+                {isActive && (
+                  <motion.div
+                    layoutId="activeReservationTabIndicator"
+                    className="absolute inset-0 bg-white rounded-t-lg border-b-2 border-[#14248A] shadow-xs z-0"
+                    transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  />
+                )}
+                <span className="relative z-10">{tab.label}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  className={`relative z-10 text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                     isActive
                       ? "bg-[#14248A] text-white"
                       : "bg-[#D4C2FC]/60 text-[#28262C]"
@@ -190,7 +209,11 @@ export function ReservationsPage() {
           onCheckIn={(res) => setSelectedResForCheckIn(res)}
           onCheckOut={(res) => setSelectedResForCheckOut(res)}
           onViewDetails={(res) => setSelectedResForDetail(res)}
-          onDeleteReservation={(res) => setSelectedResForDelete(res)}
+          onDeleteReservation={
+            permissions?.canDeleteReservation
+              ? (res) => setSelectedResForDelete(res)
+              : null
+          }
         />
       )}
 

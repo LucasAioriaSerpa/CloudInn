@@ -60,6 +60,7 @@ function createMockDb(initialData = {}) {
     reservations: (initialData.reservations || []).map((r) => ({ ...r })),
     rooms: (initialData.rooms || []).map((rm) => ({ ...rm })),
     guests: (initialData.guests || []).map((g) => ({ ...g })),
+    staff: (initialData.staff || []).map((s) => ({ ...s })),
   };
 
   const getCollection = (name) => {

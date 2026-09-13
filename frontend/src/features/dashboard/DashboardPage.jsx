@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useHotel } from "../../context/HotelContext.jsx";
 import { ROUTES } from "../../config/constants.js";
+import { motion } from "motion/react";
 import { MetricCard } from "./components/MetricCard.jsx";
 import { QuickRoomStatus } from "./components/QuickRoomStatus.jsx";
 import { TodayActivities } from "./components/TodayActivities.jsx";
@@ -49,7 +50,12 @@ export function DashboardPage({ onNavigate }) {
   return (
     <div className="space-y-6">
       {/* Top Banner with Quick Actions */}
-      <div className="bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className="bg-gradient-to-r from-[#14248A] via-[#28262C] to-[#28262C] rounded-2xl p-6 sm:p-8 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+      >
         <div className="relative z-10 max-w-xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#D4C2FC] text-xs font-semibold mb-3">
             <Sparkles className="w-3.5 h-3.5 text-[#D4C2FC]" />
@@ -69,7 +75,7 @@ export function DashboardPage({ onNavigate }) {
             variant="secondary"
             icon={Plus}
             onClick={() => setIsNewReservationOpen(true)}
-            className="shadow-md"
+            className="shadow-md border border-[#ffffff] text-[#1f1f1f]"
           >
             Nova Reserva
           </Button>
@@ -84,50 +90,77 @@ export function DashboardPage({ onNavigate }) {
 
         {/* Decorative background glow */}
         <div className="absolute right-0 top-0 w-96 h-96 bg-[#998FC7]/10 rounded-full blur-3xl pointer-events-none" />
-      </div>
+      </motion.div>
 
-      {/* Operational Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-        <MetricCard
-          title="Taxa de Ocupação"
-          value={`${stats.occupancyRate}%`}
-          subtitle={`${stats.occupiedRooms} ocupados de ${stats.totalRooms} quartos`}
-          icon={BedDouble}
-          trend={`${stats.availableRooms} livres`}
-          color="primary"
-          onClick={() => onNavigate(ROUTES.ROOMS)}
-        />
-        <MetricCard
-          title="Check-ins Pendentes"
-          value={stats.pendingCount}
-          subtitle="Aguardando confirmação de entrada"
-          icon={LogIn}
-          trend="Hoje"
-          color="amber"
-          onClick={() => onNavigate(ROUTES.RESERVATIONS)}
-        />
-        <MetricCard
-          title="Hospedagens Ativas"
-          value={stats.activeCount}
-          subtitle="Hóspedes presentes no hotel"
-          icon={CalendarCheck}
-          trend={`${stats.completedCount} finalizadas`}
-          color="purple"
-          onClick={() => onNavigate(ROUTES.RESERVATIONS)}
-        />
-        <MetricCard
-          title="Limpeza & Governança"
-          value={stats.dirtyRooms + stats.cleaningRooms}
-          subtitle={`${stats.dirtyRooms} sujos • ${stats.cleaningRooms} em limpeza`}
-          icon={Sparkles}
-          trend={stats.dirtyRooms > 0 ? "Ação requerida" : "Em dia"}
-          color={stats.dirtyRooms > 0 ? "rose" : "emerald"}
-          onClick={() => onNavigate(ROUTES.ROOMS)}
-        />
-      </div>
+      {/* Operational Metrics Grid com Stagger */}
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: { staggerChildren: 0.08 },
+          },
+        }}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5"
+      >
+        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
+          <MetricCard
+            title="Taxa de Ocupação"
+            value={`${stats.occupancyRate}%`}
+            subtitle={`${stats.occupiedRooms} ocupados de ${stats.totalRooms} quartos`}
+            icon={BedDouble}
+            trend={`${stats.availableRooms} livres`}
+            color="primary"
+            onClick={() => onNavigate(ROUTES.ROOMS)}
+          />
+        </motion.div>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
+          <MetricCard
+            title="Check-ins Pendentes"
+            value={stats.pendingCount}
+            subtitle="Aguardando confirmação de entrada"
+            icon={LogIn}
+            trend="Hoje"
+            color="amber"
+            onClick={() => onNavigate(ROUTES.RESERVATIONS)}
+          />
+        </motion.div>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
+          <MetricCard
+            title="Hospedagens Ativas"
+            value={stats.activeCount}
+            subtitle="Hóspedes presentes no hotel"
+            icon={CalendarCheck}
+            trend={`${stats.completedCount} finalizadas`}
+            color="purple"
+            onClick={() => onNavigate(ROUTES.RESERVATIONS)}
+          />
+        </motion.div>
+
+        <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}>
+          <MetricCard
+            title="Limpeza & Governança"
+            value={stats.dirtyRooms + stats.cleaningRooms}
+            subtitle={`${stats.dirtyRooms} sujos • ${stats.cleaningRooms} em limpeza`}
+            icon={Sparkles}
+            trend={stats.dirtyRooms > 0 ? "Ação requerida" : "Em dia"}
+            color={stats.dirtyRooms > 0 ? "rose" : "emerald"}
+            onClick={() => onNavigate(ROUTES.ROOMS)}
+          />
+        </motion.div>
+      </motion.div>
 
       {/* Main operational splits: Quick Room Status & Today Activities */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <motion.div
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.3 }}
+        className="grid grid-cols-1 lg:grid-cols-12 gap-6"
+      >
         <div className="lg:col-span-7">
           <QuickRoomStatus
             rooms={rooms}
@@ -145,7 +178,7 @@ export function DashboardPage({ onNavigate }) {
             onNavigateReservations={() => onNavigate(ROUTES.RESERVATIONS)}
           />
         </div>
-      </div>
+      </motion.div>
 
       {/* Modals for Check-In, Check-Out, Room Status and New Reservation */}
       <CheckInModal

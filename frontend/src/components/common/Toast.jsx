@@ -1,5 +1,5 @@
 /**
- * @fileoverview Notificações Flutuantes (Toasts) para feedback imediato
+ * @fileoverview Notificações Flutuantes (Toasts) com animação fluida via Motion
  */
 import React from "react";
 import {
@@ -9,22 +9,23 @@ import {
   Info,
   X,
 } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { useHotel } from "../../context/HotelContext.jsx";
 
 export function ToastContainer() {
   const { toasts, removeToast } = useHotel();
 
-  if (!toasts || toasts.length === 0) return null;
-
   return (
     <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-md w-full pointer-events-none px-4">
-      {toasts.map((toast) => (
-        <ToastItem
-          key={toast.id}
-          toast={toast}
-          onDismiss={() => removeToast(toast.id)}
-        />
-      ))}
+      <AnimatePresence mode="popLayout">
+        {toasts.map((toast) => (
+          <ToastItem
+            key={toast.id}
+            toast={toast}
+            onDismiss={() => removeToast(toast.id)}
+          />
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
@@ -45,8 +46,13 @@ function ToastItem({ toast, onDismiss }) {
   };
 
   return (
-    <div
-      className={`pointer-events-auto flex items-start justify-between gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-xs transition-all animate-slide-in ${
+    <motion.div
+      layout
+      initial={{ opacity: 0, x: 40, scale: 0.94 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: 40, scale: 0.9, transition: { duration: 0.18 } }}
+      transition={{ type: "spring", stiffness: 420, damping: 28 }}
+      className={`pointer-events-auto flex items-start justify-between gap-3 p-4 rounded-xl border shadow-lg backdrop-blur-xs ${
         bgStyles[toast.type] || bgStyles.info
       }`}
     >
@@ -56,13 +62,15 @@ function ToastItem({ toast, onDismiss }) {
           {toast.message}
         </div>
       </div>
-      <button
+      <motion.button
+        whileHover={{ scale: 1.15 }}
+        whileTap={{ scale: 0.9 }}
         onClick={onDismiss}
-        className="p-1 rounded-md text-[#28262C]/40 hover:text-[#28262C] hover:bg-black/5"
+        className="p-1 rounded-md text-[#28262C]/40 hover:text-[#28262C] hover:bg-black/5 cursor-pointer"
         aria-label="Fechar notificação"
       >
         <X className="w-4 h-4" />
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 }

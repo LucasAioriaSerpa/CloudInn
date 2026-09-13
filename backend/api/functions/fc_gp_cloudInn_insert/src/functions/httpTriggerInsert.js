@@ -1,5 +1,17 @@
-const { app } = require("@azure/functions");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+let app;
+try {
+  ({ app } = require("@azure/functions"));
+} catch (_) {
+  app = { http: () => {} };
+}
+let MongoClient;
+let ServerApiVersion;
+try {
+  ({ MongoClient, ServerApiVersion } = require("mongodb"));
+} catch (_) {
+  MongoClient = class {};
+  ServerApiVersion = {};
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -185,13 +197,20 @@ async function handler(request, context, options = {}) {
     const queryEntity = query.get ? query.get("entity") : undefined;
 
     // Identifica o tipo de entidade com base no parâmetro ou estrutura dos dados
+    const isStaff =
+      queryEntity === "staff" ||
+      queryEntity === "employee" ||
+      queryEntity === "funcionario" ||
+      (body.username && body.role && !body.checkInDate && !body.roomType);
     const isGuest =
-      queryEntity === "guest" ||
-      (body.name && body.document && !body.checkInDate && !body.roomType);
+      !isStaff &&
+      (queryEntity === "guest" ||
+      (body.name && body.document && !body.checkInDate && !body.roomType));
     const isRoom =
-      queryEntity === "room" ||
-      (body.number && body.roomType && !body.checkInDate);
-    const isReservation = !isGuest && !isRoom;
+      !isStaff &&
+      (queryEntity === "room" ||
+      (body.number && body.roomType && !body.checkInDate));
+    const isReservation = !isStaff && !isGuest && !isRoom;
 
     const client =
       options.client ||
@@ -214,6 +233,7 @@ async function handler(request, context, options = {}) {
         const guestsColl = db.collection("guests");
         const roomsColl = db.collection("rooms");
         const resColl = db.collection("reservations");
+        const staffColl = db.collection("staff");
         if (typeof guestsColl.createIndex === "function") {
           await Promise.allSettled([
             guestsColl.createIndex({ id: 1 }, { unique: true }),
@@ -223,6 +243,8 @@ async function handler(request, context, options = {}) {
             resColl.createIndex({ id: 1 }, { unique: true }),
             resColl.createIndex({ guestId: 1 }),
             resColl.createIndex({ roomId: 1 }),
+            staffColl.createIndex({ id: 1 }, { unique: true }),
+            staffColl.createIndex({ username: 1 }, { unique: true }),
           ]);
         }
       } catch (_) {}
@@ -482,6 +504,84 @@ async function handler(request, context, options = {}) {
         status: 200,
         headers: corsHeaders,
         body: JSON.stringify(roomDoc),
+      };
+    }
+
+    if (isStaff) {
+      if (!body.name || !body.username || !body.role) {
+        await client.close();
+        return {
+          status: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "400",
+            message:
+              "Entrada inválida: 'name', 'username' e 'role' são campos obrigatórios para o cadastro de funcionário.",
+          }),
+        };
+      }
+
+      const validRoles = [
+        "manager",
+        "sub_manager",
+        "receptionist",
+        "housekeeper",
+      ];
+      if (!validRoles.includes(body.role)) {
+        await client.close();
+        return {
+          status: 422,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "422",
+            message: `Cargo inválido: '${body.role}'. Cargos aceitos: ${validRoles.join(", ")}.`,
+          }),
+        };
+      }
+
+      const lastStaff = await db
+        .collection("staff")
+        .find()
+        .sort({ id: -1 })
+        .limit(1)
+        .toArray();
+      const nextStaffId =
+        lastStaff.length > 0 && typeof lastStaff[0].id === "number"
+          ? lastStaff[0].id + 1
+          : 1;
+
+      const roleLabels = {
+        manager: "Gerente Geral",
+        sub_manager: "Sub-Gerente",
+        receptionist: "Recepcionista",
+        housekeeper: "Governanta",
+      };
+
+      const staffDoc = {
+        id: Number(body.id || nextStaffId),
+        name: String(body.name).trim(),
+        username: String(body.username).trim(),
+        email: body.email
+          ? String(body.email).trim()
+          : `${body.username}@cloudinn.com`,
+        role: String(body.role).trim(),
+        roleLabel: body.roleLabel || roleLabels[body.role] || body.role,
+        department: body.department ? String(body.department).trim() : "Geral",
+        shift: body.shift ? String(body.shift).trim() : "Diurno",
+        status: body.status || "active",
+        phone: body.phone ? String(body.phone).trim() : "",
+        document: body.document ? String(body.document).trim() : "",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await db.collection("staff").insertOne(staffDoc);
+      await client.close();
+
+      return {
+        status: 201,
+        headers: corsHeaders,
+        body: JSON.stringify(staffDoc),
       };
     }
 

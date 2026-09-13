@@ -1,5 +1,17 @@
-const { app } = require("@azure/functions");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+let app;
+try {
+  ({ app } = require("@azure/functions"));
+} catch (_) {
+  app = { http: () => {} };
+}
+let MongoClient;
+let ServerApiVersion;
+try {
+  ({ MongoClient, ServerApiVersion } = require("mongodb"));
+} catch (_) {
+  MongoClient = class {};
+  ServerApiVersion = {};
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -427,13 +439,89 @@ async function handler(request, context, options = {}) {
       };
     }
 
+    // 4. Consulta de Funcionários / Staff (RBAC, Swagger /staff e /staff/{id})
+    if (
+      entity === "staff" ||
+      entity === "employee" ||
+      entity === "employees" ||
+      entity === "funcionario" ||
+      entity === "funcionarios"
+    ) {
+      const collection = db.collection("staff");
+
+      if (idParam) {
+        const numId = Number(idParam);
+        const filter = isNaN(numId)
+          ? { id: idParam }
+          : { $or: [{ id: numId }, { id: idParam }] };
+        const item = await collection.findOne(filter, {
+          projection: { _id: 0 },
+        });
+
+        await client.close();
+
+        if (!item) {
+          return {
+            status: 404,
+            headers: corsHeaders,
+            body: JSON.stringify({
+              code: "404",
+              message: `Funcionário com ID #${idParam} não encontrado.`,
+            }),
+          };
+        }
+
+        return {
+          status: 200,
+          headers: corsHeaders,
+          body: JSON.stringify(item),
+        };
+      }
+
+      const roleParam = query.get("role");
+      const departmentParam = query.get("department");
+
+      const filter = {};
+      if (roleParam && roleParam !== "all") {
+        filter.role = roleParam;
+      }
+      if (departmentParam) {
+        filter.department = departmentParam;
+      }
+      if (statusParam && statusParam !== "all") {
+        filter.status = statusParam;
+      }
+      if (searchParam) {
+        const regex = new RegExp(searchParam, "i");
+        filter.$or = [
+          { name: regex },
+          { username: regex },
+          { email: regex },
+          { role: regex },
+          { department: regex },
+        ];
+      }
+
+      const items = await collection
+        .find(filter, { projection: { _id: 0 } })
+        .sort({ id: 1 })
+        .toArray();
+      await client.close();
+
+      return {
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(items),
+      };
+    }
+
     await client.close();
     return {
       status: 400,
       headers: corsHeaders,
       body: JSON.stringify({
         code: "400",
-        message: `Entidade desconhecida: '${entity}'. Use 'reservation', 'room' ou 'guest'.`,
+        message: `Entidade desconhecida: '${entity}'. Use 'reservation', 'room', 'guest' ou 'staff'.`,
       }),
     };
   } catch (error) {

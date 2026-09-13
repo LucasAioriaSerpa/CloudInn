@@ -150,11 +150,83 @@ const SEED_RESERVATIONS = [
   },
 ];
 
+const SEED_STAFF = [
+  {
+    id: 1,
+    name: "Carlos Eduardo Mendes",
+    username: "carlos.gerente",
+    email: "carlos.mendes@cloudinn.com",
+    role: "manager",
+    roleLabel: "Gerente Geral",
+    department: "Administração Geral",
+    shift: "Diurno (Geral)",
+    status: "active",
+    phone: "+55 11 98888-1111",
+    document: "111.222.333-44",
+    avatar: "CM",
+    color: "#14248A",
+    createdAt: "2026-08-01T08:00:00Z",
+    updatedAt: "2026-08-25T10:30:00Z",
+  },
+  {
+    id: 2,
+    name: "Roberto Silva Albuquerque",
+    username: "roberto.subgerente",
+    email: "roberto.silva@cloudinn.com",
+    role: "sub_manager",
+    roleLabel: "Sub-Gerente",
+    department: "Operações & Recepção",
+    shift: "Vespertino",
+    status: "active",
+    phone: "+55 11 98888-2222",
+    document: "222.333.444-55",
+    avatar: "RA",
+    color: "#998FC7",
+    createdAt: "2026-08-05T09:00:00Z",
+    updatedAt: "2026-08-26T14:00:00Z",
+  },
+  {
+    id: 3,
+    name: "Camila Rocha Guimarães",
+    username: "camila.recepcao",
+    email: "camila.rocha@cloudinn.com",
+    role: "receptionist",
+    roleLabel: "Recepcionista",
+    department: "Front Desk & Reservas",
+    shift: "Manhã / Tarde",
+    status: "active",
+    phone: "+55 11 98888-3333",
+    document: "333.444.555-66",
+    avatar: "CR",
+    color: "#14248A",
+    createdAt: "2026-08-10T07:30:00Z",
+    updatedAt: "2026-08-27T16:20:00Z",
+  },
+  {
+    id: 4,
+    name: "Maria Aparecida dos Santos",
+    username: "maria.governanca",
+    email: "maria.santos@cloudinn.com",
+    role: "housekeeper",
+    roleLabel: "Governanta Chefe",
+    department: "Governança & Higienização",
+    shift: "Manhã (07h às 15h)",
+    status: "active",
+    phone: "+55 11 98888-4444",
+    document: "444.555.666-77",
+    avatar: "MS",
+    color: "#D4C2FC",
+    createdAt: "2026-08-12T06:45:00Z",
+    updatedAt: "2026-08-28T11:15:00Z",
+  },
+];
+
 // Cliente em memória compartilhado para quando MONGO_BD_URI não estiver definida
 const sharedMemoryDb = createMockDb({
   reservations: SEED_RESERVATIONS,
   rooms: SEED_ROOMS,
   guests: SEED_GUESTS,
+  staff: SEED_STAFF,
 });
 
 /**
@@ -278,6 +350,15 @@ function azureFunctionsMiddleware(req, res, next) {
       pathname.startsWith("/api/guest")
     ) {
       simulatedEntity = "guest";
+      if (req.method === "GET") targetHandler = selectHandler;
+      else if (req.method === "POST") targetHandler = insertHandler;
+      else if (req.method === "PUT") targetHandler = updateHandler;
+      else if (req.method === "DELETE") targetHandler = deleteHandler;
+    } else if (
+      pathname.startsWith("/staff") ||
+      pathname.startsWith("/api/staff")
+    ) {
+      simulatedEntity = "staff";
       if (req.method === "GET") targetHandler = selectHandler;
       else if (req.method === "POST") targetHandler = insertHandler;
       else if (req.method === "PUT") targetHandler = updateHandler;

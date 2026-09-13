@@ -1,5 +1,17 @@
-const { app } = require("@azure/functions");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+let app;
+try {
+  ({ app } = require("@azure/functions"));
+} catch (_) {
+  app = { http: () => {} };
+}
+let MongoClient;
+let ServerApiVersion;
+try {
+  ({ MongoClient, ServerApiVersion } = require("mongodb"));
+} catch (_) {
+  MongoClient = class {};
+  ServerApiVersion = {};
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -221,14 +233,22 @@ async function handler(request, context, options = {}) {
         const resDel = await db.collection("reservations").deleteMany({});
         const guestDel = await db.collection("guests").deleteMany({});
         const roomDel = await db.collection("rooms").deleteMany({});
+        const staffDel = await db.collection("staff").deleteMany({});
         totalDeleted =
           (resDel.deletedCount || 0) +
           (guestDel.deletedCount || 0) +
-          (roomDel.deletedCount || 0);
+          (roomDel.deletedCount || 0) +
+          (staffDel.deletedCount || 0);
       } else {
         let coll = "reservations";
         if (entity === "guest" || entity === "guests") coll = "guests";
         else if (entity === "room" || entity === "rooms") coll = "rooms";
+        else if (
+          entity === "staff" ||
+          entity === "employee" ||
+          entity === "funcionario"
+        )
+          coll = "staff";
         const delRes = await db.collection(coll).deleteMany({});
         totalDeleted = delRes.deletedCount || 0;
       }
@@ -256,6 +276,15 @@ async function handler(request, context, options = {}) {
       collectionName = "guests";
     } else if (entity === "room" || entity === "rooms") {
       collectionName = "rooms";
+    } else if (
+      entity === "staff" ||
+      entity === "employee" ||
+      entity === "employees" ||
+      entity === "funcionario" ||
+      entity === "funcionarios" ||
+      (query.get && query.get("staffId"))
+    ) {
+      collectionName = "staff";
     }
 
     const existingRecord = await db.collection(collectionName).findOne(filter);

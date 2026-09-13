@@ -1,5 +1,17 @@
-const { app } = require("@azure/functions");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+let app;
+try {
+  ({ app } = require("@azure/functions"));
+} catch (_) {
+  app = { http: () => {} };
+}
+let MongoClient;
+let ServerApiVersion;
+try {
+  ({ MongoClient, ServerApiVersion } = require("mongodb"));
+} catch (_) {
+  MongoClient = class {};
+  ServerApiVersion = {};
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

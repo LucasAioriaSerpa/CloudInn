@@ -2,6 +2,7 @@
  * @fileoverview Layout mestre da aplicação CloudInn
  */
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Sidebar } from "./Sidebar.jsx";
 import { Header } from "./Header.jsx";
 import { ToastContainer } from "../common/Toast.jsx";
@@ -27,31 +28,43 @@ export function AppLayout({ activeRoute, onNavigate, children }) {
         />
       </div>
 
-      {/* Mobile Sidebar Overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div
-            className="fixed inset-0 bg-[#28262C]/60 backdrop-blur-xs"
-            onClick={() => setMobileMenuOpen(false)}
-            aria-hidden="true"
-          />
-          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-[#28262C] z-10">
-            <Sidebar
-              activeRoute={activeRoute}
-              onNavigate={onNavigate}
-              onOpenPartnerSimulator={() => {
-                setPartnerModalOpen(true);
-                setMobileMenuOpen(false);
-              }}
-              onOpenRestoreModal={() => {
-                setRestoreModalOpen(true);
-                setMobileMenuOpen(false);
-              }}
-              onCloseMobile={() => setMobileMenuOpen(false)}
+      {/* Mobile Sidebar Overlay Animado */}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-50 flex lg:hidden">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-[#28262C]/60 backdrop-blur-xs"
+              onClick={() => setMobileMenuOpen(false)}
+              aria-hidden="true"
             />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 26, stiffness: 280 }}
+              className="relative flex-1 flex flex-col max-w-xs w-full bg-[#28262C] z-10 shadow-2xl"
+            >
+              <Sidebar
+                activeRoute={activeRoute}
+                onNavigate={onNavigate}
+                onOpenPartnerSimulator={() => {
+                  setPartnerModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                onOpenRestoreModal={() => {
+                  setRestoreModalOpen(true);
+                  setMobileMenuOpen(false);
+                }}
+                onCloseMobile={() => setMobileMenuOpen(false)}
+              />
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">

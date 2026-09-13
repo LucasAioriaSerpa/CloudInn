@@ -14,6 +14,7 @@ describe("fc_gp_cloudInn_select - Testes Unitários", () => {
   let mockReservations;
   let mockRooms;
   let mockGuests;
+  let mockStaff;
 
   beforeEach(() => {
     originalEnv = { ...process.env };
@@ -64,6 +65,29 @@ describe("fc_gp_cloudInn_select - Testes Unitários", () => {
         name: "Maria Silva",
         document: "98765432100",
         email: "maria@example.com",
+      },
+    ];
+
+    mockStaff = [
+      {
+        id: 1,
+        name: "Carlos Gerente",
+        username: "carlos.gerente",
+        email: "carlos@cloudinn.com",
+        role: "manager",
+        roleLabel: "Gerente Geral",
+        department: "Administração",
+        status: "active",
+      },
+      {
+        id: 2,
+        name: "Camila Recepção",
+        username: "camila.recepcao",
+        email: "camila@cloudinn.com",
+        role: "receptionist",
+        roleLabel: "Recepcionista",
+        department: "Front Desk",
+        status: "active",
       },
     ];
   });
@@ -207,6 +231,47 @@ describe("fc_gp_cloudInn_select - Testes Unitários", () => {
     assert.ok(Array.isArray(body));
     assert.equal(body.length, 1);
     assert.equal(body[0].name, "Lucas Serpa");
+  });
+
+  test("Deve retornar lista de funcionários cadastrados (entity=staff)", async () => {
+    const { client } = createMockDb({ staff: mockStaff });
+    const req = createMockRequest({
+      method: "GET",
+      query: { entity: "staff" },
+    });
+    const context = createMockContext();
+
+    const res = await handler(req, context, {
+      client,
+      mongoUri: "mongodb://fake:27017/cloudinn",
+    });
+
+    assert.equal(res.status, 200);
+    const body = JSON.parse(res.body);
+    assert.ok(Array.isArray(body));
+    assert.equal(body.length, 2);
+    assert.equal(body[0].name, "Carlos Gerente");
+    assert.equal(body[0].role, "manager");
+  });
+
+  test("Deve retornar funcionário por ID (entity=staff, id=1)", async () => {
+    const { client } = createMockDb({ staff: mockStaff });
+    const req = createMockRequest({
+      method: "GET",
+      query: { entity: "staff", id: "1" },
+    });
+    const context = createMockContext();
+
+    const res = await handler(req, context, {
+      client,
+      mongoUri: "mongodb://fake:27017/cloudinn",
+    });
+
+    assert.equal(res.status, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.id, 1);
+    assert.equal(body.username, "carlos.gerente");
+    assert.equal(body.role, "manager");
   });
 
   test("Deve retornar 400 para entidade não suportada", async () => {

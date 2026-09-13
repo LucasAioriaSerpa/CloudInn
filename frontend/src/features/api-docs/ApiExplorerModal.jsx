@@ -108,6 +108,41 @@ const SWAGGER_ENDPOINTS = [
   },
   {
     method: "GET",
+    path: "/staff",
+    rf: "RBAC & Equipe",
+    desc: "Lista funcionários do hotel com filtros por ?role=manager|sub_manager|receptionist|housekeeper e ?status=active|inactive.",
+    status: "Implementado",
+  },
+  {
+    method: "POST",
+    path: "/staff",
+    rf: "RBAC & Cadastro",
+    desc: "Cadastra novo colaborador com perfil de acesso, cargo, departamento e turno.",
+    status: "Implementado",
+  },
+  {
+    method: "GET",
+    path: "/staff/{staffId}",
+    rf: "RBAC & Consulta",
+    desc: "Busca detalhes de um colaborador pelo ID.",
+    status: "Implementado",
+  },
+  {
+    method: "PUT",
+    path: "/staff/{staffId}",
+    rf: "RBAC & Gestão",
+    desc: "Atualiza dados, cargo, permissões, turno ou status do colaborador.",
+    status: "Implementado",
+  },
+  {
+    method: "DELETE",
+    path: "/staff/{staffId}",
+    rf: "RBAC & Gestão",
+    desc: "Remove o registro do funcionário na base de dados (fc_gp_cloudInn_delete).",
+    status: "Implementado",
+  },
+  {
+    method: "GET",
     path: "/health",
     rf: "Monitoramento",
     desc: "Verifica a integridade da conexão das Functions com o MongoDB (fc_gp_cloudInn_health).",
@@ -136,8 +171,7 @@ export function ApiExplorerModal({ isOpen, onClose }) {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
             <span>
-              Todos os 11 endpoints e RFs do Swagger estão conectados e
-              funcionais no frontend.
+              Todos os 16 endpoints do Swagger (incluindo o recurso de Funcionários / Staff RBAC) estão integrados e operacionais.
             </span>
           </div>
           <span className="font-mono text-[11px] font-bold text-[#14248A]">

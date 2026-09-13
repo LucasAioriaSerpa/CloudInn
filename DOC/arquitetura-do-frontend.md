@@ -8,8 +8,9 @@ O **CloudInn** é um sistema de gestão hoteleira (_Property Management System_ 
 
 - **Agilidade Operacional:** Permitir que operadores de recepção realizem check-ins, check-outs e cadastros de reservas em poucos cliques com validações em tempo real.
 - **Governança Eficiente:** Garantir transparência total do ciclo de vida dos quartos (disponível, reservado, ocupado, sujo, em limpeza).
+- **Controle de Acesso Baseado em Perfis (RBAC):** Segregar acessos, módulos e ações de acordo com o perfil do colaborador autenticado (`manager`, `sub_manager`, `receptionist` e `housekeeper`).
 - **Resiliência Arquitetural:** Suportar comunicação direta com Azure Functions com fallback gracioso e modo de demonstração local automático.
-- **Conformidade com arc42 e OpenAPI/Swagger:** Implementar com precisão os requisitos funcionais **RF01 a RF11** descritos na arquitetura do sistema.
+- **Conformidade com arc42 e OpenAPI/Swagger:** Implementar com precisão os requisitos funcionais **RF01 a RF11** descritos na arquitetura do sistema e a nova entidade de colaboradores (`staff`).
 
 ---
 
@@ -20,6 +21,7 @@ O **CloudInn** é um sistema de gestão hoteleira (_Property Management System_ 
 | **React**        | 18.x   | Biblioteca de construção de interfaces declarativas com componentização moderna baseada em Hooks                 |
 | **Vite**         | 6.x    | Bundler e ferramenta de desenvolvimento rápido com compilação ultra-rápida via Rollup/esbuild                    |
 | **Tailwind CSS** | 4.x    | Framework utilitário de estilização responsiva com design tokens customizados e alta performance de renderização |
+| **Motion**       | 12.x   | Biblioteca de animações físicas, transições de páginas, gavetas laterais, modais e feedback de micro-interações  |
 | **Lucide React** | 1.x    | Conjunto iconográfico consistente e semântico para identificação visual de status e ações                        |
 | **Context API**  | Nativo | Camada de gerenciamento de estado global reativo sem a complexidade desnecessária de bibliotecas externas        |
 | **Fetch API**    | Nativo | Cliente HTTP para integração com Azure Functions com headers de segurança (`api_key`)                            |
@@ -75,23 +77,26 @@ frontend/
     │   └── constants.js           # Enums de status, rotas, tipos de quarto e contratos
     │
     ├── context/                   # Gerenciamento de Estado Global
-    │   └── HotelContext.jsx       # Provedor do estado unificado (reservas, quartos, hóspedes)
+    │   ├── HotelContext.jsx       # Provedor do estado unificado (reservas, quartos, hóspedes)
+    │   └── AuthContext.jsx        # Contexto de autenticação, sessão de operador e RBAC
     │
     ├── services/                  # Camada de Integração HTTP e Domínio
     │   ├── apiClient.js           # Cliente HTTP unificado com roteamento para Azure Functions
     │   ├── reservationService.js  # Serviços de reserva (listagem, cadastro, checkin, checkout)
     │   ├── roomService.js         # Serviços de quartos e fluxo de governança
-    │   └── guestService.js        # Serviços de catálogo de hóspedes
+    │   ├── guestService.js        # Serviços de catálogo de hóspedes
+    │   ├── staffService.js        # Serviços da coleção 'staff' (CRUD de colaboradores e RBAC)
+    │   └── demoRestoreService.js  # Serviço de limpeza e restauração de dados demo
     │
     ├── mocks/                     # Persistência e Dados de Demonstração
-    │   ├── seedData.js            # Base inicial de quartos, hóspedes e reservas
+    │   ├── seedData.js            # Base inicial de quartos, hóspedes, reservas e staff
     │   └── mockStorage.js         # Engine de persistência local com sincronização de estados
     │
     ├── components/                # Componentes Compartilhados Reutilizáveis
     │   ├── layout/                # Estrutura base da interface
     │   │   ├── AppLayout.jsx      # Shell responsivo com Sidebar fixa e Header sticky
-    │   │   ├── Header.jsx         # Cabeçalho com ações rápidas, data e status
-    │   │   └── Sidebar.jsx        # Navegação lateral institucional com badges de contadores
+    │   │   ├── Header.jsx         # Cabeçalho com perfil de usuário, papel ativo e atalhos
+    │   │   └── Sidebar.jsx        # Navegação lateral filtrada dinamicamente por permissões RBAC
     │   └── common/                # Biblioteca de componentes atômicos
     │       ├── Badge.jsx          # Tag de status estilizada com suporte a variantes
     │       ├── Button.jsx         # Botão com variantes (primary, secondary, outline, danger)
@@ -106,6 +111,9 @@ frontend/
     │       └── Toast.jsx          # Notificações flutuantes com auto-dismiss
     │
     └── features/                  # Módulos de Negócio (Telas e Modais Específicos)
+        ├── auth/                  # Módulo de Autenticação e Controle de Sessão
+        │   └── LoginPage.jsx      # Tela de login corporativo com seletor de perfis RBAC
+        │
         ├── dashboard/             # Módulo do Painel Principal
         │   ├── DashboardPage.jsx
         │   └── components/
@@ -129,6 +137,9 @@ frontend/
         │       ├── RoomTable.jsx        # Visão tabular para operação densa
         │       └── RoomStatusModal.jsx  # Modal de transição de status de governança
         │
+        ├── housekeeping/          # Módulo Dedicado para Equipe de Governança
+        │   └── HousekeepingPage.jsx     # Interface simplificada para camareiras e governantas
+        │
         ├── guests/                # Módulo de Hóspedes
         │   ├── GuestsPage.jsx
         │   └── components/
@@ -140,7 +151,7 @@ frontend/
         │   └── PartnerSimulatorModal.jsx # Simulação de webhook Booking/Expedia/Airbnb
         │
         └── api-docs/              # Documentação Interativa de Contratos
-            └── ApiExplorerModal.jsx      # Matriz de conformidade OpenAPI / RF01-RF11
+            └── ApiExplorerModal.jsx      # Matriz de conformidade OpenAPI / RF01-RF11 / Staff
 ```
 
 ---
@@ -160,6 +171,65 @@ frontend/
 | **RF09**  | Liberação de quarto com status `dirty`               | Sincronizado automaticamente ao confirmar check-out em `handleCheckOut`                          |
 | **RF10**  | Atualização pelo serviço de limpeza                  | `RoomStatusModal.jsx` e botões de ação rápida em `RoomCard.jsx` (`cleaning` / `available`)       |
 | **RF11**  | Liberação do quarto para nova reserva                | Transição para `available` no `RoomStatusModal.jsx` ou `RoomCard.jsx`                            |
+
+### 5.1 Novo Recurso: Tabela/Coleção `staff` e Matriz RBAC (Controle de Acesso)
+
+Para suportar governança corporativa, auditoria e segregação de funções, a arquitetura do CloudInn foi expandida com o recurso **`staff`** (Funcionários / Colaboradores), integrado ponta a ponta desde os contratos Swagger OpenAPI até a persistência no MongoDB e validação no frontend.
+
+#### 5.1.1 Estrutura de Dados da Coleção `staff` (MongoDB)
+
+```json
+{
+  "id": 1,
+  "name": "Carlos Eduardo Mendes",
+  "username": "carlos.gerente",
+  "email": "carlos.mendes@cloudinn.com",
+  "role": "manager",
+  "roleLabel": "Gerente Geral",
+  "department": "Administração Geral",
+  "shift": "Diurno (Geral)",
+  "status": "active",
+  "phone": "+55 11 98888-1111",
+  "document": "111.222.333-44",
+  "createdAt": "2026-08-01T08:00:00.000Z",
+  "updatedAt": "2026-08-25T10:30:00.000Z"
+}
+```
+
+#### 5.1.2 Perfis de Usuário (Roles)
+
+| Papel (`role`)    | Título Exibido       | Descrição Operacional                                                                             |
+| :---------------- | :------------------- | :------------------------------------------------------------------------------------------------ |
+| `manager`         | **Gerente Geral**    | Acesso irrestrito a todos os módulos, relatórios gerenciais, métricas financeiras e exclusões     |
+| `sub_manager`     | **Sub-Gerente**      | Acesso operacional amplo, supervisão de reservas, quartos e equipe, com governança avançada       |
+| `receptionist`    | **Recepcionista**    | Foco na operação de balcão (check-in, check-out, novas reservas, cadastro de hóspedes e consulta) |
+| `housekeeper`     | **Governanta Chefe** | Foco exclusivo na higienização, quartos, transição de status (`dirty` -> `cleaning` -> `available`) |
+
+#### 5.1.3 Matriz de Permissões RBAC no Frontend (`AuthContext.jsx`)
+
+| Recurso / Funcionalidade           | Gerente (`manager`) | Sub-Gerente (`sub_manager`) | Recepcionista (`receptionist`) | Governanta (`housekeeper`) |
+| :--------------------------------- | :-----------------: | :-------------------------: | :----------------------------: | :------------------------: |
+| **Painel Geral (Dashboard)**       | Sim                 | Sim                         | Sim (visão compacta)           | Não (redireciona p/ quartos)|
+| **Métricas Financeiras & Ocupação**| Sim                 | Sim                         | Oculto                         | Oculto                     |
+| **Criar / Editar Reservas**        | Sim                 | Sim                         | Sim                            | Não                        |
+| **Realizar Check-in / Check-out**  | Sim                 | Sim                         | Sim                            | Não                        |
+| **Cancelar / Excluir Reservas**    | Sim                 | Sim                         | Não                            | Não                        |
+| **Gestão de Hóspedes (CRUD)**      | Sim                 | Sim                         | Sim                            | Não                        |
+| **Catálogo de Quartos**            | Sim                 | Sim                         | Sim                            | Sim                        |
+| **Painel Exclusivo de Governança** | Sim                 | Sim                         | Apenas consulta                | Sim (visão principal)      |
+| **Mudar Status de Limpeza Quarto** | Sim                 | Sim                         | Sim                            | Sim                        |
+| **Simulador de Parceiros Webhook** | Sim                 | Sim                         | Oculto                         | Oculto                     |
+| **Gestão de Equipe (`/staff`)**    | Sim                 | Leitura                     | Não                            | Não                        |
+
+#### 5.1.4 Endpoints da Tag `staff` no Swagger (`/DOC/api/swagger.yaml`)
+
+| Método   | Rota                   | Parâmetros / Body                         | Resposta | Descrição Arquitetural                                                      |
+| :------- | :--------------------- | :---------------------------------------- | :------- | :-------------------------------------------------------------------------- |
+| `GET`    | `/staff`               | `?role=...&status=...&department=...`     | `200`    | Lista os colaboradores com filtros opcionais por cargo, setor ou status     |
+| `POST`   | `/staff`               | `StaffBody` (`name, username, role, ...`) | `201`    | Cadastra um novo membro da equipe com perfil de acesso e turno de trabalho  |
+| `GET`    | `/staff/{staffId}`     | Path param: `staffId`                     | `200`    | Consulta o perfil completo e permissões de um colaborador específico        |
+| `PUT`    | `/staff/{staffId}`     | Path param: `staffId`, Body: `StaffBody`  | `200`    | Atualiza dados cadastrais, departamento, turno, cargo ou status do operador |
+| `DELETE` | `/staff/{staffId}`     | Path param: `staffId`                     | `200`    | Desativa ou remove o colaborador da base do sistema                         |
 
 ---
 
@@ -279,6 +349,84 @@ O contexto utiliza `useMemo` para computar em tempo real:
 - Ações de mutação geram notificações visuais automáticas com temporizador de 4,5 segundos.
 - Tipos suportados: `success`, `error`, `warning` e `info`.
 
+### 7.3 Gerenciamento de Sessão e Controle de Acesso (`AuthContext`)
+
+A camada de controle de acesso é provida pelo `AuthProvider` (`src/context/AuthContext.jsx`) e consumida através do hook `useAuth()`:
+
+```javascript
+import { useAuth } from "../../context/AuthContext.jsx";
+
+export function MeuMenu() {
+  const { currentUser, role, permissions, can, switchRole, logout } = useAuth();
+
+  return (
+    <div>
+      <span>Operador: {currentUser?.name} ({currentUser?.roleLabel})</span>
+      {can("viewMetrics") && <IndicadoresFinanceiros />}
+      {can("manageStaff") && <BotaoGestaoEquipe />}
+    </div>
+  );
+}
+```
+
+- **Persistência de Sessão:** Armazena o usuário ativo no `localStorage` com restauração automática ao recarregar a aplicação.
+- **Alternador de Papéis para Demonstração:** Permite alternar instantaneamente entre perfis (`manager`, `sub_manager`, `receptionist`, `housekeeper`) para validação visual dos fluxos de trabalho.
+
+### 7.4 Arquitetura de Animações e Transições de Interface (Motion)
+
+Para transformar o CloudInn em uma ferramenta hoteleira de alto refinamento ergonômico, foi integrada a biblioteca **Motion** (`motion/react`). A arquitetura de animações segue rigorosamente o princípio de **motion com propósito operacional**, priorizando transições que comunicam hierarquia espacial, feedback imediato de ações e troca suave de contexto sem impactar o tempo de resposta ou sobrecarregar a GPU.
+
+#### 7.4.1 Matriz de Componentes e Padrões de Animação
+
+| Componente / Fluxo | Padrão Motion Aplicado | Configuração Física / Transição | Propósito e Benefício UX |
+| :--- | :--- | :--- | :--- |
+| **Transição de Rotas** (`App.jsx`) | `<AnimatePresence mode="wait">` + `<motion.div>` | `opacity: 0 → 1`, `y: 8 → 0`, `duration: 0.18s` | Elimina cortes abruptos de tela, comunicando mudança de módulo de forma contínua. |
+| **Drawer / Sidebar Mobile** (`AppLayout.jsx`) | `<motion.aside>` + `<motion.div>` (backdrop) | Slide lateral com mola: `x: "-100%" → 0%`, `damping: 30`, `stiffness: 300` | Sensação tátil e natural de gaveta ao abrir/fechar o menu em smartphones e tablets. |
+| **Indicador da Rota Ativa** (`Sidebar.jsx`) | `<motion.div layoutId="activeNavTab">` | Mola fluida contínua: `stiffness: 500`, `damping: 35` | O fundo ativo desliza suavemente entre os itens do menu conforme a rota selecionada muda. |
+| **Modais Operacionais** (`Modal.jsx`) | `<AnimatePresence>` + `<motion.div>` | Backdrop fade (`0 → 1`), Dialog: `scale: 0.96 → 1`, `y: 12 → 0`, spring `damping: 25` | Foco progressivo com aceleração suave e fechamento limpo via teardown de animação. |
+| **Sistema de Toasts** (`Toast.jsx`) | `<AnimatePresence>` + `<motion.div>` | Entrada lateral: `x: 40 → 0`, `opacity: 0 → 1`, saída: `x: 40`, `opacity: 0` | Empilhamento dinâmico e desaparecimento suave após o temporizador ou fechamento manual. |
+| **Abas de Filtro Operacional** (`ReservationsPage.jsx` & `RoomsPage.jsx`) | `layoutId="active...Indicator"` | Deslizamento horizontal com física: `stiffness: 400`, `damping: 32` | Sinalização visual nítida da categoria selecionada sem recálculo de layout desnecessário. |
+| **Menu de Perfil e RBAC** (`Header.jsx`) | Popover com `<AnimatePresence>` e spring | `scale: 0.95 → 1`, `y: -6 → 0`, `damping: 25`, `stiffness: 350` | Abertura instantânea e contextual do seletor rápido de colaboradores e troca de visão. |
+| **Cartões de Métrica & Ações** (`DashboardPage.jsx` & `MetricCard.jsx`) | Grid com `staggerChildren: 0.08s` + `whileHover={{ y: -3 }}` | Animação cascateada na entrada do dashboard e elevação sutil sob o cursor do mouse | Facilita a leitura escaneável de métricas chave e realça elementos clicáveis. |
+| **Cartões de Quarto** (`RoomCard.jsx`) | `layout` + `whileHover={{ y: -2 }}` | Transição fluida de posição durante reordenação e filtragem de status | Suaviza reorganização dos quartos ao alternar entre disponíveis, ocupados e sujos. |
+| **Tela de Login** (`LoginPage.jsx`) | Entrada coordenada de colunas + `AnimatePresence` | Colunas: `x: ±16 → 0`, feedback de erro com animação de altura, cards com `whileHover` | Apresentação acolhedora do ambiente corporativo com seleção rápida de perfis. |
+
+#### 7.4.2 Exemplo Arquitetural de Rota com AnimatePresence
+
+```jsx
+// src/App.jsx
+import { AnimatePresence, motion } from "motion/react";
+
+<AnimatePresence mode="wait">
+  <motion.div
+    key={currentRoute}
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -8 }}
+    transition={{ duration: 0.18, ease: "easeOut" }}
+  >
+    {renderContent()}
+  </motion.div>
+</AnimatePresence>
+```
+
+#### 7.4.3 Princípio do layoutId para Elementos Compartilhados
+
+O uso da diretiva `layoutId` do Motion permite que elementos compartilhados — como o fundo iluminado do menu ativo na `Sidebar` ou a linha marcadora das abas em `ReservationsPage` e `RoomsPage` — transitem fluidamente entre posições no DOM através de interpolação geométrica FLIP (*First, Last, Invert, Play*), garantindo 60fps constantes mesmo em dispositivos de menor capacidade computacional:
+
+```jsx
+// src/components/layout/Sidebar.jsx
+{isActive && (
+  <motion.div
+    layoutId="activeNavTab"
+    className="absolute inset-0 bg-[#14248A] rounded-xl shadow-md z-0"
+    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+  />
+)}
+<Icon className="w-4 h-4 relative z-10 shrink-0" />
+<span className="relative z-10 font-semibold">{item.label}</span>
+```
+
 ---
 
 ## 8. Camada de Integração e Roteamento para Azure Functions
@@ -287,21 +435,22 @@ A comunicação com o backend ocorre através da classe `ApiClient` (`src/servic
 
 ### 8.1 Mapeamento de Funções do Azure no Frontend
 
-| Função Azure Backend    | Variável de Ambiente       | Método     | Responsabilidade                                                               |
-| :---------------------- | :------------------------- | :--------- | :----------------------------------------------------------------------------- |
-| `fc_gp_cloudInn_select` | `VITE_CLOUDINN_SELECT_URL` | `GET`      | Consultas de reservas, quartos e hóspedes (`entity=reservation\|room\|guest`)  |
-| `fc_gp_cloudInn_insert` | `VITE_CLOUDINN_INSERT_URL` | `POST`     | Cadastro de novas reservas, quartos e hóspedes                                 |
-| `fc_gp_cloudInn_update` | `VITE_CLOUDINN_UPDATE_URL` | `PUT/POST` | Check-in (`action=checkin`), check-out (`action=checkout`) e status de quartos |
-| `fc_gp_cloudInn_delete` | `VITE_CLOUDINN_DELETE_URL` | `DELETE`   | Exclusão de reservas, quartos e hóspedes                                       |
-| `fc_gp_cloudInn_health` | `VITE_CLOUDINN_HEALTH_URL` | `GET`      | Verificação de disponibilidade, conectividade MongoDB e métricas               |
+| Função Azure Backend    | Variável de Ambiente       | Método     | Entidades e Operações Suportadas                                                                     |
+| :---------------------- | :------------------------- | :--------- | :--------------------------------------------------------------------------------------------------- |
+| `fc_gp_cloudInn_select` | `VITE_CLOUDINN_SELECT_URL` | `GET`      | Consulta reservas, quartos, hóspedes e equipe (`entity=reservation\|room\|guest\|staff`)             |
+| `fc_gp_cloudInn_insert` | `VITE_CLOUDINN_INSERT_URL` | `POST`     | Cadastro de reservas, quartos, hóspedes e novos colaboradores (`staff` com índices em `id`/`username`)|
+| `fc_gp_cloudInn_update` | `VITE_CLOUDINN_UPDATE_URL` | `PUT/POST` | Check-in (`action=checkin`), check-out (`action=checkout`), quartos e atualização de staff          |
+| `fc_gp_cloudInn_delete` | `VITE_CLOUDINN_DELETE_URL` | `DELETE`   | Exclusão/desativação de reservas, quartos, hóspedes e colaboradores (`entity=staff`)                 |
+| `fc_gp_cloudInn_health` | `VITE_CLOUDINN_HEALTH_URL` | `GET`      | Verificação de disponibilidade, conectividade MongoDB e integridade das coleções                     |
 
 ### 8.2 Fallback Gracioso e Alta Disponibilidade
 
 Caso o frontend esteja rodando sem conexão direta com o Azure Functions ou em ambiente de testes:
 
-1. O `ApiClient` tenta a chamada remota.
-2. Se houver falha de rede ou timeout, os serviços (`reservationService`, `roomService`, `guestService`) acionam o `mockStorage`.
-3. O `mockStorage` armazena e atualiza as coleções em memória/sessão local, garantindo que o operador nunca veja telas em branco ou quebras de execução.
+1. O `ApiClient` tenta a chamada remota para o Azure Functions ou para a bridge local (`/backend/localBridge.cjs`).
+2. A bridge local (`localBridge.cjs`) expõe todos os 5 handlers das Azure Functions conectando ao MongoDB Atlas se `MONGO_BD_URI` estiver preenchida, ou usando `createMockDb` com as coleções `reservations`, `rooms`, `guests` e `staff`.
+3. Se houver falha de rede ou timeout, os serviços (`reservationService`, `roomService`, `guestService`, `staffService`) acionam o `mockStorage`.
+4. O `mockStorage` armazena e sincroniza as coleções em memória/sessão local, garantindo que o operador nunca veja telas em branco ou quebras de execução.
 
 ---
 

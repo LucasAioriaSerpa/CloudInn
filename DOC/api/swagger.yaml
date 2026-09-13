@@ -20,6 +20,8 @@ tags:
     description: Cadastro, consulta, atualização e remoção de quartos e controle de seus status
   - name: guest
     description: Cadastro, consulta, atualização e remoção de hóspedes
+  - name: staff
+    description: Cadastro, consulta, atualização de cargos e controle de funcionários do hotel (RBAC)
 
 paths:
   /reservation:
@@ -667,6 +669,212 @@ paths:
       security:
         - api_key: []
 
+  /staff:
+    get:
+      tags:
+        - staff
+      summary: Lista os funcionários do hotel
+      description: Retorna os funcionários cadastrados no hotel. Permite filtrar por cargo (role) ou departamento.
+      operationId: getStaff
+      parameters:
+        - name: role
+          in: query
+          description: Filtra por cargo do funcionário
+          required: false
+          schema:
+            type: string
+            enum:
+              - manager
+              - sub_manager
+              - receptionist
+              - housekeeper
+        - name: department
+          in: query
+          description: Filtra por departamento
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filtra por status do funcionário
+          required: false
+          schema:
+            type: string
+            enum:
+              - active
+              - inactive
+              - on_leave
+      responses:
+        "200":
+          description: Funcionários retornados com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Staff"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    post:
+      tags:
+        - staff
+      summary: Cadastra um novo funcionário
+      description: Registra um novo colaborador com cargo e permissões no sistema hoteleiro.
+      operationId: createStaff
+      requestBody:
+        $ref: "#/components/requestBodies/StaffBody"
+      responses:
+        "201":
+          description: Funcionário cadastrado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+        "400":
+          description: Entrada inválida
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+  /staff/{staffId}:
+    get:
+      tags:
+        - staff
+      summary: Busca um funcionário pelo ID
+      description: Retorna os dados cadastrais e permissões de um funcionário específico.
+      operationId: getStaffById
+      parameters:
+        - $ref: "#/components/parameters/StaffId"
+      responses:
+        "200":
+          description: Funcionário retornado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Funcionário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    put:
+      tags:
+        - staff
+      summary: Atualiza dados de um funcionário
+      description: Modifica dados cadastrais, cargo, departamento ou turno do colaborador.
+      operationId: updateStaff
+      parameters:
+        - $ref: "#/components/parameters/StaffId"
+      requestBody:
+        $ref: "#/components/requestBodies/StaffBody"
+      responses:
+        "200":
+          description: Funcionário atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Staff"
+        "400":
+          description: ID ou dados inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Funcionário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Erro de validação
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
+    delete:
+      tags:
+        - staff
+      summary: Exclui ou desativa um funcionário
+      description: Remove o registro do colaborador ou atualiza seu status para inativo.
+      operationId: deleteStaff
+      parameters:
+        - $ref: "#/components/parameters/StaffId"
+      responses:
+        "200":
+          description: Funcionário removido com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponse"
+        "400":
+          description: ID inválido
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Funcionário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Erro inesperado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - api_key: []
+
 components:
   schemas:
     Reservation:
@@ -759,6 +967,119 @@ components:
             - dirty
             - cleaning
 
+    Staff:
+      type: object
+      required:
+        - name
+        - username
+        - role
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          example: 1
+        name:
+          type: string
+          example: Carlos Eduardo Mendes
+        username:
+          type: string
+          example: carlos.gerente
+        email:
+          type: string
+          example: carlos.mendes@cloudinn.com
+        role:
+          type: string
+          description: Cargo do funcionário com regras de controle de acesso (RBAC)
+          example: manager
+          enum:
+            - manager
+            - sub_manager
+            - receptionist
+            - housekeeper
+        roleLabel:
+          type: string
+          example: Gerente Geral
+        department:
+          type: string
+          example: Administração Geral
+        shift:
+          type: string
+          example: Diurno (Geral)
+        status:
+          type: string
+          example: active
+          enum:
+            - active
+            - inactive
+            - on_leave
+        phone:
+          type: string
+          example: "+55 11 98888-1111"
+        document:
+          type: string
+          example: 111.222.333-44
+        avatar:
+          type: string
+          example: CM
+        color:
+          type: string
+          example: "#14248A"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    StaffBody:
+      type: object
+      required:
+        - name
+        - username
+        - role
+      properties:
+        name:
+          type: string
+          example: Carlos Eduardo Mendes
+        username:
+          type: string
+          example: carlos.gerente
+        email:
+          type: string
+          example: carlos.mendes@cloudinn.com
+        password:
+          type: string
+          format: password
+          example: "123456"
+        role:
+          type: string
+          example: manager
+          enum:
+            - manager
+            - sub_manager
+            - receptionist
+            - housekeeper
+        department:
+          type: string
+          example: Administração Geral
+        shift:
+          type: string
+          example: Diurno (Geral)
+        status:
+          type: string
+          example: active
+          enum:
+            - active
+            - inactive
+            - on_leave
+        phone:
+          type: string
+          example: "+55 11 98888-1111"
+        document:
+          type: string
+          example: 111.222.333-44
+
     ApiResponse:
       type: object
       properties:
@@ -814,6 +1135,15 @@ components:
         type: integer
         format: int64
 
+    StaffId:
+      name: staffId
+      in: path
+      description: ID do funcionário
+      required: true
+      schema:
+        type: integer
+        format: int64
+
   requestBodies:
     ReservationBody:
       description: Dados da reserva
@@ -838,6 +1168,14 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Guest"
+
+    StaffBody:
+      description: Dados do funcionário para cadastro ou atualização
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/StaffBody"
 
   securitySchemes:
     api_key:

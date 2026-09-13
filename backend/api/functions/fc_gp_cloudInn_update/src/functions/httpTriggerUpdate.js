@@ -1,5 +1,17 @@
-const { app } = require("@azure/functions");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+let app;
+try {
+  ({ app } = require("@azure/functions"));
+} catch (_) {
+  app = { http: () => {} };
+}
+let MongoClient;
+let ServerApiVersion;
+try {
+  ({ MongoClient, ServerApiVersion } = require("mongodb"));
+} catch (_) {
+  MongoClient = class {};
+  ServerApiVersion = {};
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -527,6 +539,102 @@ async function handler(request, context, options = {}) {
           type: "success",
           message: "Reserva atualizada com sucesso",
         }),
+      };
+    }
+
+    // 6. Atualização de Funcionário / Staff (RBAC, Swagger PUT /staff/{id})
+    if (
+      entity === "staff" ||
+      entity === "employee" ||
+      entity === "funcionario" ||
+      query.get("staffId")
+    ) {
+      const staffIdParam = query.get("staffId") || idParam;
+      if (!staffIdParam) {
+        await client.close();
+        return {
+          status: 400,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "400",
+            message: "Identificador do funcionário é obrigatório.",
+          }),
+        };
+      }
+
+      const numId = Number(staffIdParam);
+      const filter = isNaN(numId)
+        ? { id: staffIdParam }
+        : { $or: [{ id: numId }, { id: staffIdParam }] };
+      const staffMember = await db.collection("staff").findOne(filter);
+
+      if (!staffMember) {
+        await client.close();
+        return {
+          status: 404,
+          headers: corsHeaders,
+          body: JSON.stringify({
+            code: "404",
+            message: `Funcionário #${staffIdParam} não encontrado.`,
+          }),
+        };
+      }
+
+      const updateFields = { updatedAt: new Date().toISOString() };
+      if (body.name) updateFields.name = String(body.name).trim();
+      if (body.username) updateFields.username = String(body.username).trim();
+      if (body.email) updateFields.email = String(body.email).trim();
+      if (body.role) {
+        const validRoles = [
+          "manager",
+          "sub_manager",
+          "receptionist",
+          "housekeeper",
+        ];
+        if (!validRoles.includes(body.role)) {
+          await client.close();
+          return {
+            status: 422,
+            headers: corsHeaders,
+            body: JSON.stringify({
+              code: "422",
+              message: `Cargo inválido: '${body.role}'.`,
+            }),
+          };
+        }
+        updateFields.role = body.role;
+        const roleLabels = {
+          manager: "Gerente Geral",
+          sub_manager: "Sub-Gerente",
+          receptionist: "Recepcionista",
+          housekeeper: "Governanta",
+        };
+        updateFields.roleLabel =
+          body.roleLabel || roleLabels[body.role] || body.role;
+      }
+      if (body.department !== undefined)
+        updateFields.department = body.department;
+      if (body.shift !== undefined) updateFields.shift = body.shift;
+      if (body.status !== undefined) updateFields.status = body.status;
+      if (body.phone !== undefined) updateFields.phone = body.phone;
+      if (body.document !== undefined) updateFields.document = body.document;
+
+      await db.collection("staff").updateOne(filter, { $set: updateFields });
+      const updatedRecord = await db
+        .collection("staff")
+        .findOne(filter, { projection: { _id: 0 } });
+      await client.close();
+
+      return {
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify(
+          updatedRecord || {
+            code: 200,
+            type: "success",
+            message: "Funcionário atualizado com sucesso",
+          },
+        ),
       };
     }
 
