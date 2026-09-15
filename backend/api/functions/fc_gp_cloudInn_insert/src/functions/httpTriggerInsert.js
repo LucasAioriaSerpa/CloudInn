@@ -56,7 +56,8 @@ function sanitizeAndExtractMongoUri(raw) {
 
   if (
     extracted &&
-    (extracted.startsWith("mongodb://") || extracted.startsWith("mongodb+srv://"))
+    (extracted.startsWith("mongodb://") ||
+      extracted.startsWith("mongodb+srv://"))
   ) {
     try {
       const urlObj = new URL(extracted);
@@ -187,7 +188,9 @@ async function handler(request, context, options = {}) {
         }),
       };
     }
-    log(`[fc_gp_cloudInn_insert] Conectando ao MongoDB: ${maskMongoUri(mongoUri)}`);
+    log(
+      `[fc_gp_cloudInn_insert] Conectando ao MongoDB: ${maskMongoUri(mongoUri)}`,
+    );
 
     const body =
       options.body !== undefined
@@ -345,11 +348,13 @@ async function handler(request, context, options = {}) {
         phone: body.guest.phone ? String(body.guest.phone).trim() : "",
       };
 
-      await db.collection("guests").updateOne(
-        { document: guestDoc.document },
-        { $set: guestDoc },
-        { upsert: true },
-      );
+      await db
+        .collection("guests")
+        .updateOne(
+          { document: guestDoc.document },
+          { $set: guestDoc },
+          { upsert: true },
+        );
 
       // 2. Identificar ou cadastrar o Quarto na coleção 'rooms'
       let roomId = body.room?.id
@@ -364,9 +369,7 @@ async function handler(request, context, options = {}) {
         ? String(body.room.roomType).trim()
         : "STD";
       let roomStatus =
-        status === "active"
-          ? "occupied"
-          : body.room?.status || "reserved";
+        status === "active" ? "occupied" : body.room?.status || "reserved";
 
       if (!roomId) {
         const existingRoom = await db
@@ -388,11 +391,13 @@ async function handler(request, context, options = {}) {
         status: roomStatus,
       };
 
-      await db.collection("rooms").updateOne(
-        { number: roomDoc.number },
-        { $set: roomDoc },
-        { upsert: true },
-      );
+      await db
+        .collection("rooms")
+        .updateOne(
+          { number: roomDoc.number },
+          { $set: roomDoc },
+          { upsert: true },
+        );
 
       // 3. Documento da Reserva exatamente conforme especificação solicitada:
       // { "id": 10, "guestId": 1, "roomId": 101, "checkInDate": "...", "checkOutDate": "...", "status": "pending" }
