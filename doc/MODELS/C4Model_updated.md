@@ -135,3 +135,26 @@ erDiagram
         string status
     }
 ```
+
+```mermaid
+sequenceDiagram
+    participant Parceiro as Sistema Parceiro (Externo)
+    participant FuncReserva as Azure Function (Reservas)
+    participant FuncQuarto as Azure Function (Quartos)
+    participant DB as MongoDB Azure
+
+    Parceiro->>FuncReserva: POST /api/reservas (JSON Payload)
+    activate FuncReserva
+    FuncReserva->>FuncReserva: Valida esquema e regras de negócio
+    FuncReserva->>DB: insertOne(Hospede & Reserva)
+    DB-->>FuncReserva: Confirmação e ObjectId
+
+    FuncReserva->>FuncQuarto: Trigger: Atualizar Status do Quarto
+    activate FuncQuarto
+    FuncQuarto->>DB: updateOne(Quarto { status: 'Reservado' })
+    DB-->>FuncQuarto: Confirmação
+    deactivate FuncQuarto
+
+    FuncReserva-->>Parceiro: 201 Created (Notificação de Sucesso)
+    deactivate FuncReserva
+```
