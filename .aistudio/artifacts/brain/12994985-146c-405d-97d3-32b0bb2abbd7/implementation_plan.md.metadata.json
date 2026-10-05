@@ -1,0 +1,6 @@
+{
+  "summary":  "Plano de implementação detalhado para completar a especificação de arquitetura arc42 (seções 1 a 12) no arquivo /doc/arc42-arquitetura-sistemica-cloudInn.md, cobrindo a stack moderna React, Azure Functions e MongoDB, com diagramas C4, fluxos de tempo de execução, modelo de implantação, ADRs e requisitos de qualidade.",
+  "updatedAt":  "2026-10-05T22:10:47.673150503Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
