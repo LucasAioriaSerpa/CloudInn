@@ -17,5 +17,8 @@
     "@google/genai": true,
     "protobufjs": true,
     "esbuild": true
+  },
+  "dependencies": {
+    "docx": "^9.8.1"
   }
 }
