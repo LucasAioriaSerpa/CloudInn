@@ -60,8 +60,6 @@ C4Component
 
 ---
 
-## Componentes
-
 ```mermaid
 flowchart TD
     subgraph ReservasFunction [Azure Function: Reservas]
