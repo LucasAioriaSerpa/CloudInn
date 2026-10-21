@@ -1,0 +1,37 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Tratamento de Erros, Retries, Compensação (Saga) e DLQ
+
+    participant Res as Reservas Service (SQL)
+    participant Bus as Azure Service Bus Topics
+    participant DLQ as Dead-Letter Queue (DLQ)
+    participant Hotel as Hotel Service (Mongo)
+    participant Monitor as Azure Monitor / Alertas
+
+    Res->>Bus: Publica ReservationCreated (Id: 'RES-777', Room: 'R301')
+    activate Bus
+
+    Bus->>Hotel: Entrega mensagem (Tentativa 1)
+    activate Hotel
+    Note over Hotel: Falha temporária no banco ou deadlock de concorrência
+    Hotel-->>Bus: NACK / AbandonMessage (Mensagem liberada para retry)
+    deactivate Hotel
+
+    Note over Bus: Backoff exponencial configurado (5s)
+    Bus->>Hotel: Entrega mensagem (Tentativa 2)
+    activate Hotel
+    Note over Hotel: Quarto R301 está interditado fisicamente por vazamento hidráulico urgente
+    Hotel-->>Bus: NACK / AbandonMessage
+    deactivate Hotel
+
+    Note over Bus: Atinge MaxDeliveryCount = 3
+    Bus->>DLQ: Move mensagem para "hotel-reservation-sync/$DeadLetterQueue"
+    deactivate Bus
+    DLQ->>Monitor: Dispara alerta crítico de telemetria ("Poison Message Detected")
+
+    %% Transação de Compensação
+    Hotel->>Bus: Publica Evento de Compensação: RoomAllocationFailed (resId: 'RES-777', reason: 'ROOM_DAMAGED')
+    Bus->>Res: Consome RoomAllocationFailed
+    activate Res
+    Res->>Res: Executa Ação Compensatória (Saga):<br/>- Transita Reserva RES-777 para CANCELLED<br/>- Registra motivo de estorno financeiro<br/>- Notifica parceiro OTA com webhook de cancelamento
+    deactivate Res

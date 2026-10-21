@@ -1,0 +1,44 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Carregamento do Painel Agregado (GET /aggregated-data)
+
+    actor User as Usuário / Recepção
+    participant MFE as Microfrontend React
+    participant BFF as BFF NestJS
+    participant APIM as API Gateway (APIM)
+    participant Hotel as Hotel Service (Mongo)
+    participant Res as Reservas Service (SQL)
+    participant Func as Azure Function Analítica
+
+    User->>MFE: Acessa Dashboard Operacional
+    MFE->>BFF: GET /api/v1/aggregated-data?hotelId=H01&date=2026-10-10
+    activate BFF
+
+    par Consulta Hotel Service via Gateway
+        BFF->>APIM: GET /api/v1/hotel/H01/catalog
+        APIM->>Hotel: GET /hotels/H01/catalog
+        Hotel-->>APIM: 200 OK (Quartos, Tarifas, Staff)
+        APIM-->>BFF: 200 OK (JSON Hotel)
+    and Consulta Reservas Service via Gateway
+        BFF->>APIM: GET /api/v1/reservations?hotelId=H01&date=2026-10-10
+        APIM->>Res: GET /reservations?hotelId=H01&date=2026-10-10
+        Res-->>APIM: 200 OK (Hóspedes, Reservas do dia)
+        APIM-->>BFF: 200 OK (JSON Reservas)
+    and Disparo de Cálculo Analítico via Gateway
+        BFF->>APIM: POST /api/v1/analytics/calculate (ocupação e projeção)
+        APIM->>Func: POST /api/calculate (Payload de aposentos/reservas)
+        alt Resposta Analítica com Sucesso (< 800ms)
+            Func-->>APIM: 200 OK ({ occupancyRate: 78.5, projectedRevenue: 14250.00 })
+            APIM-->>BFF: 200 OK (Resultados)
+        else Timeout Transitório da Function (> 1500ms)
+            Note over BFF,Func: Circuit Breaker / Timeout acionado no BFF
+            BFF->>BFF: Registra erro analítico e ativa fallback (partial: true)
+        end
+    end
+
+    Note over BFF: AggregatedDtoAssembler consolida respostas dos 3 serviços
+    BFF-->>MFE: 200 OK { hotel, guests, reservations, calculations, metadata: { partial: false } }
+    deactivate BFF
+
+    MFE->>MFE: Atualiza estados no HotelContext e renderiza painel reativo
+    MFE-->>User: Exibe Grade de Quartos, Ocupação e Reservas sem latência

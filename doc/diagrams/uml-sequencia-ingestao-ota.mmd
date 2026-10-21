@@ -1,0 +1,52 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Ingestão Idempotente de Reserva via OTA / Parceiro Externo
+
+    actor OTA as Sistema Parceiro (Booking/Airbnb)
+    participant APIM as API Gateway (APIM)
+    participant Res as Reservas/Guests Service (SQL)
+    participant SQL as Azure SQL Database
+    participant Worker as Outbox Worker
+    participant Bus as Azure Service Bus Topics
+    participant Hotel as Hotel Service (Mongo)
+
+    OTA->>APIM: POST /api/v1/ota/reservations (Header: api_key, Idempotency-Key: IK-98721)
+    activate APIM
+    Note over APIM: Validação de api_key, verificação de cota e log de telemetria
+    APIM->>Res: POST /internal/reservations/ota (Payload padronizado)
+    activate Res
+
+    Res->>SQL: BEGIN TRANSACTION
+    Res->>SQL: SELECT ResponseBody FROM IdempotencyKeys WHERE Key = 'IK-98721'
+    alt Chave de Idempotência já Processada (Duplicidade)
+        SQL-->>Res: Retorna resposta em cache salva anteriormente
+        Res->>SQL: COMMIT TRANSACTION
+        Res-->>APIM: 200 OK (Payload original idempotente)
+        APIM-->>OTA: 200 OK (Confirmação sem duplicidade de registro)
+    else Nova Chave de Idempotência
+        Res->>SQL: SELECT COUNT(*) FROM Reservations WHERE RoomId = 'R201' AND Status IN ('CONFIRMED','ACTIVE') AND CheckInDate < @Out AND CheckOutDate > @In
+        alt Conflito de Período Detectado (Overbooking Preventivo)
+            SQL-->>Res: Conflito encontrado (> 0)
+            Res->>SQL: ROLLBACK TRANSACTION
+            Res-->>APIM: 409 Conflict { error: "Quarto indisponível para o período solicitado" }
+            APIM-->>OTA: 409 Conflict
+        else Disponibilidade Confirmada
+            SQL-->>Res: Nenhum conflito (0)
+            Res->>SQL: INSERT INTO Guests (Name, Document, Email, Phone)...
+            Res->>SQL: INSERT INTO Reservations (GuestId, RoomId, Dates, Status = 'CONFIRMED')...
+            Res->>SQL: INSERT INTO Outbox (EventType = 'ReservationCreated', Payload, Status = 'PENDING')...
+            Res->>SQL: INSERT INTO IdempotencyKeys (Key = 'IK-98721', StatusCode = 201)...
+            Res->>SQL: COMMIT TRANSACTION
+            Res-->>APIM: 201 Created { reservationId: "RES-501", status: "CONFIRMED" }
+            deactivate Res
+            APIM-->>OTA: 201 Created { reservationId: "RES-501", status: "CONFIRMED" }
+            deactivate APIM
+
+            %% Processamento Assíncrono da Outbox
+            Worker->>SQL: SELECT * FROM Outbox WHERE Status = 'PENDING'
+            Worker->>Bus: Publish Topic "reservation-events" (EventType: ReservationCreated)
+            Worker->>SQL: UPDATE Outbox SET Status = 'PUBLISHED' WHERE Id = ...
+            Bus->>Hotel: Consume Subscription "hotel-reservation-sync"
+            Hotel->>Hotel: Atualiza Projeções de Ocupação no MongoDB
+        end
+    end

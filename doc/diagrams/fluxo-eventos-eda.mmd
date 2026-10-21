@@ -1,0 +1,51 @@
+flowchart LR
+    %% Topologia EDA e Fluxo de Eventos no Azure Service Bus
+
+    subgraph Provedores ["Produtores de Eventos"]
+        ResProducer["Reservas/Guests Service\n(Transactional Outbox Worker)"]
+        HotelProducer["Hotel Service\n(ServiceBusPublisher)"]
+    end
+
+    subgraph Broker ["Azure Service Bus (Namespace: sb-cloudinn-prod)"]
+        Topic{{"Tópico Central:\ncloudinn.domain.events\n(Partitioned, MaxSize: 5GB)"}}
+
+        subgraph SubHotel ["Assinatura: sub-hotel-sync"]
+            FilterH["SQL Filter:\nEventType IN ('CheckInCompleted',\n'CheckOutCompleted',\n'ReservationCreated')"]
+            DLQ_H["Dead-Letter Queue:\nsub-hotel-sync/$DeadLetterQueue"]
+        end
+
+        subgraph SubRes ["Assinatura: sub-reservas-sync"]
+            FilterR["SQL Filter:\nEventType IN ('RoomCleaningCompleted',\n'RoomAvailable',\n'RoomAllocationFailed')"]
+            DLQ_R["Dead-Letter Queue:\nsub-reservas-sync/$DeadLetterQueue"]
+        end
+
+        subgraph SubAnalytics ["Assinatura: sub-analytics-worker"]
+            FilterA["SQL Filter:\n1 = 1 (Todos os eventos para projeção)"]
+            DLQ_A["Dead-Letter Queue:\nsub-analytics-worker/$DeadLetterQueue"]
+        end
+    end
+
+    subgraph Consumidores ["Consumidores de Eventos"]
+        HotelConsumer["Hotel Service\n(Domain Event Handler)"]
+        ResConsumer["Reservas/Guests Service\n(Saga & Sync Handler)"]
+        FuncEventWorker["Azure Function Event Trigger\n(Async Analytics Projection)"]
+    end
+
+    %% Ligações Produtores -> Tópico
+    ResProducer -->|"AMQP 1.0\n[ReservationCreated, CheckInCompleted, CheckOutCompleted]"| Topic
+    HotelProducer -->|"AMQP 1.0\n[RoomCleaningCompleted, RoomMarkedDirty]"| Topic
+
+    %% Tópico -> Assinaturas
+    Topic --> SubHotel
+    Topic --> SubRes
+    Topic --> SubAnalytics
+
+    %% Assinaturas -> Consumidores
+    SubHotel -->|"Mensagens Válidas"| HotelConsumer
+    SubHotel -.->|"MaxDeliveryCount > 3"| DLQ_H
+
+    SubRes -->|"Mensagens Válidas"| ResConsumer
+    SubRes -.->|"MaxDeliveryCount > 3"| DLQ_R
+
+    SubAnalytics -->|"Mensagens Válidas"| FuncEventWorker
+    SubAnalytics -.->|"MaxDeliveryCount > 3"| DLQ_A

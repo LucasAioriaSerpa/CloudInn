@@ -1,0 +1,83 @@
+---
+title: C4 Nivel 4 (Codigo) - Vertical Slice SetRoomCleaningStatus (Hotel Service)
+---
+classDiagram
+    class HousekeepingController {
+        +patchRoomStatus(roomId: string, dto: SetCleaningStatusDto): Promise~RoomResponseDto~
+    }
+
+    class SetCleaningStatusCommand {
+        +roomId: string
+        +targetStatus: RoomStatus
+        +staffId: string
+        +notes: string
+    }
+
+    class SetCleaningStatusValidator {
+        +validate(command: SetCleaningStatusCommand): ValidationResult
+    }
+
+    class SetRoomCleaningStatusHandler {
+        -roomRepository: IRoomRepository
+        -eventPublisher: IEventPublisher
+        +execute(command: SetCleaningStatusCommand): Promise~RoomResult~
+    }
+
+    class IRoomRepository {
+        <<interface>>
+        +findById(id: string): Promise~Room~
+        +updateStatus(id: string, status: RoomStatus): Promise~void~
+    }
+
+    class IEventPublisher {
+        <<interface>>
+        +publish(event: DomainEvent): Promise~void~
+    }
+
+    class Room {
+        -id: string
+        -number: string
+        -roomType: RoomType
+        -status: RoomStatus
+        +transitionTo(newStatus: RoomStatus, staffId: string): void
+        +canTransition(newStatus: RoomStatus): boolean
+    }
+
+    class RoomStatus {
+        <<enumeration>>
+        AVAILABLE
+        RESERVED
+        OCCUPIED
+        DIRTY
+        CLEANING
+    }
+
+    class MongoRoomRepositoryAdapter {
+        -roomModel: Model~RoomDocument~
+        +findById(id: string): Promise~Room~
+        +updateStatus(id: string, status: RoomStatus): Promise~void~
+    }
+
+    class ServiceBusEventPublisherAdapter {
+        -sender: ServiceBusSender
+        +publish(event: DomainEvent): Promise~void~
+    }
+
+    class RoomCleaningCompletedEvent {
+        +eventId: string
+        +occurredAt: Date
+        +roomId: string
+        +hotelId: string
+        +staffId: string
+    }
+
+    HousekeepingController --> SetCleaningStatusCommand : instancia
+    HousekeepingController --> SetRoomCleaningStatusHandler : invoca
+    SetRoomCleaningStatusHandler --> SetCleaningStatusValidator : valida
+    SetRoomCleaningStatusHandler --> IRoomRepository : consulta e atualiza
+    SetRoomCleaningStatusHandler --> IEventPublisher : publica evento
+    SetRoomCleaningStatusHandler --> Room : executa regras de domínio
+    Room --> RoomStatus : possui estado
+    IRoomRepository <|.. MongoRoomRepositoryAdapter : implementa
+    IEventPublisher <|.. ServiceBusEventPublisherAdapter : implementa
+    ServiceBusEventPublisherAdapter --> RoomCleaningCompletedEvent : emite

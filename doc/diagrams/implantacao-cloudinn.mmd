@@ -1,0 +1,56 @@
+flowchart TB
+    %% Diagrama de Implantação em Nuvem - Microsoft Azure & MongoDB Atlas
+
+    subgraph ClientEnv ["Ambiente do Usuário (Client Devices)"]
+        Browser["Navegador Web / Dispositivo Móvel\n(Google Chrome, Safari, Edge)"]
+    end
+
+    subgraph AzureCloud ["Microsoft Azure Cloud (Região: Brazil South / East US)"]
+        subgraph EdgeLayer ["Borda & Distribuição de Conteúdo"]
+            SWA["«PaaS» Azure Static Web Apps\nCDN Global + TLS Automático\n[Microfrontend React SPA]"]
+            APIM_PaaS["«PaaS» Azure API Management\nGateway Interno & Políticas\n[VNet Integration / Private Endpoint]"]
+        end
+
+        subgraph ComputeLayer ["Computação & Orquestração de Containers"]
+            subgraph ACA_Env ["Azure Container Apps Environment (VNet Privada)"]
+                BFF_Container["«Container» bff-cloudinn:v1\nNode.js 22 / NestJS\n(2 Réplicas - Auto-scale HTTP)"]
+                Hotel_Container["«Container» hotel-service:v1\nNode.js 22 / NestJS\n(2 Réplicas - Auto-scale HTTP/KEDA)"]
+                Res_Container["«Container» reservas-service:v1\nNode.js 22 / NestJS\n(2 Réplicas - Auto-scale HTTP/KEDA)"]
+            end
+
+            subgraph ServerlessEnv ["Ambiente Serverless"]
+                FuncApp["«Serverless» Azure Function App v4\nNode.js 22 / Flex Consumption\n[Analytics Calculation Trigger]"]
+            end
+        end
+
+        subgraph DataPaaS ["Serviços Gerenciados de Dados & Mensageria"]
+            AzureSqlPaaS[("«PaaS» Azure SQL Database\nGeneral Purpose Serverless\n[Banco: db-cloudinn-reservas]")]
+            ServiceBusPaaS{{"«PaaS» Azure Service Bus\nStandard Tier\n[Namespace: sb-cloudinn-prod]"}}
+            KeyVault["«Security» Azure Key Vault\n(Segredos, Certificados mTLS, API Keys)"]
+            AppInsights["«Telemetry» Azure Application Insights\n(Métricas, Traces W3C, Log Analytics)"]
+        end
+    end
+
+    subgraph MongoCloud ["MongoDB Atlas Cloud (AWS / Azure Peering)"]
+        MongoAtlasCluster[("«DBaaS» MongoDB Atlas\nReplica Set Triplo (M10/M20)\n[Database: db_cloudinn_hotel]")]
+    end
+
+    %% Relações de Rede
+    Browser -->|"HTTPS / TLS 1.3 (Porta 443)"| SWA
+    Browser -->|"HTTPS / REST JSON"| BFF_Container
+
+    BFF_Container -->|"HTTPS / mTLS (Rede Privada)"| APIM_PaaS
+
+    APIM_PaaS -->|"HTTP Privado (Porta 5001)"| Hotel_Container
+    APIM_PaaS -->|"HTTP Privado (Porta 5002)"| Res_Container
+    APIM_PaaS -->|"HTTPS Privado (Function Key)"| FuncApp
+
+    Hotel_Container -->|"TLS / BSON (Porta 27017)"| MongoAtlasCluster
+    Res_Container -->|"TDS Encriptado (Porta 1433)"| AzureSqlPaaS
+
+    Res_Container -.->|"AMQP 1.0 (Porta 5671)"| ServiceBusPaaS
+    Hotel_Container -.->|"AMQP 1.0 (Porta 5671)"| ServiceBusPaaS
+
+    ComputeLayer -.->|"Managed Identity / RBAC"| KeyVault
+    ComputeLayer -.->|"Telemetry Ingestion"| AppInsights
+    APIM_PaaS -.->|"W3C Distributed Tracing"| AppInsights
