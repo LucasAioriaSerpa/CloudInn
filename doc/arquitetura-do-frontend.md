@@ -62,7 +62,7 @@ O frontend do CloudInn adota a paleta cromática corporativa definida nos docume
 
 A aplicação adota o padrão **Feature-Driven Architecture**, onde componentes, subcomponentes e lógicas específicas residem juntos por domínio de negócio:
 
-```
+```text
 frontend/
 ├── index.html                     # Entrypoint HTML com meta tags e fontes Google Fonts
 ├── vite.config.js                 # Configuração do Vite (porta 3000, build para ../dist)
@@ -198,38 +198,38 @@ Para suportar governança corporativa, auditoria e segregação de funções, a 
 
 #### 5.1.2 Perfis de Usuário (Roles)
 
-| Papel (`role`)    | Título Exibido       | Descrição Operacional                                                                             |
-| :---------------- | :------------------- | :------------------------------------------------------------------------------------------------ |
-| `manager`         | **Gerente Geral**    | Acesso irrestrito a todos os módulos, relatórios gerenciais, métricas financeiras e exclusões     |
-| `sub_manager`     | **Sub-Gerente**      | Acesso operacional amplo, supervisão de reservas, quartos e equipe, com governança avançada       |
-| `receptionist`    | **Recepcionista**    | Foco na operação de balcão (check-in, check-out, novas reservas, cadastro de hóspedes e consulta) |
-| `housekeeper`     | **Governanta Chefe** | Foco exclusivo na higienização, quartos, transição de status (`dirty` -> `cleaning` -> `available`) |
+| Papel (`role`) | Título Exibido       | Descrição Operacional                                                                               |
+| :------------- | :------------------- | :-------------------------------------------------------------------------------------------------- |
+| `manager`      | **Gerente Geral**    | Acesso irrestrito a todos os módulos, relatórios gerenciais, métricas financeiras e exclusões       |
+| `sub_manager`  | **Sub-Gerente**      | Acesso operacional amplo, supervisão de reservas, quartos e equipe, com governança avançada         |
+| `receptionist` | **Recepcionista**    | Foco na operação de balcão (check-in, check-out, novas reservas, cadastro de hóspedes e consulta)   |
+| `housekeeper`  | **Governanta Chefe** | Foco exclusivo na higienização, quartos, transição de status (`dirty` -> `cleaning` -> `available`) |
 
 #### 5.1.3 Matriz de Permissões RBAC no Frontend (`AuthContext.jsx`)
 
-| Recurso / Funcionalidade           | Gerente (`manager`) | Sub-Gerente (`sub_manager`) | Recepcionista (`receptionist`) | Governanta (`housekeeper`) |
-| :--------------------------------- | :-----------------: | :-------------------------: | :----------------------------: | :------------------------: |
-| **Painel Geral (Dashboard)**       | Sim                 | Sim                         | Sim (visão compacta)           | Não (redireciona p/ quartos)|
-| **Métricas Financeiras & Ocupação**| Sim                 | Sim                         | Oculto                         | Oculto                     |
-| **Criar / Editar Reservas**        | Sim                 | Sim                         | Sim                            | Não                        |
-| **Realizar Check-in / Check-out**  | Sim                 | Sim                         | Sim                            | Não                        |
-| **Cancelar / Excluir Reservas**    | Sim                 | Sim                         | Não                            | Não                        |
-| **Gestão de Hóspedes (CRUD)**      | Sim                 | Sim                         | Sim                            | Não                        |
-| **Catálogo de Quartos**            | Sim                 | Sim                         | Sim                            | Sim                        |
-| **Painel Exclusivo de Governança** | Sim                 | Sim                         | Apenas consulta                | Sim (visão principal)      |
-| **Mudar Status de Limpeza Quarto** | Sim                 | Sim                         | Sim                            | Sim                        |
-| **Simulador de Parceiros Webhook** | Sim                 | Sim                         | Oculto                         | Oculto                     |
-| **Gestão de Equipe (`/staff`)**    | Sim                 | Leitura                     | Não                            | Não                        |
+| Recurso / Funcionalidade            | Gerente (`manager`) | Sub-Gerente (`sub_manager`) | Recepcionista (`receptionist`) |  Governanta (`housekeeper`)  |
+| :---------------------------------- | :-----------------: | :-------------------------: | :----------------------------: | :--------------------------: |
+| **Painel Geral (Dashboard)**        |         Sim         |             Sim             |      Sim (visão compacta)      | Não (redireciona p/ quartos) |
+| **Métricas Financeiras & Ocupação** |         Sim         |             Sim             |             Oculto             |            Oculto            |
+| **Criar / Editar Reservas**         |         Sim         |             Sim             |              Sim               |             Não              |
+| **Realizar Check-in / Check-out**   |         Sim         |             Sim             |              Sim               |             Não              |
+| **Cancelar / Excluir Reservas**     |         Sim         |             Sim             |              Não               |             Não              |
+| **Gestão de Hóspedes (CRUD)**       |         Sim         |             Sim             |              Sim               |             Não              |
+| **Catálogo de Quartos**             |         Sim         |             Sim             |              Sim               |             Sim              |
+| **Painel Exclusivo de Governança**  |         Sim         |             Sim             |        Apenas consulta         |    Sim (visão principal)     |
+| **Mudar Status de Limpeza Quarto**  |         Sim         |             Sim             |              Sim               |             Sim              |
+| **Simulador de Parceiros Webhook**  |         Sim         |             Sim             |             Oculto             |            Oculto            |
+| **Gestão de Equipe (`/staff`)**     |         Sim         |           Leitura           |              Não               |             Não              |
 
 #### 5.1.4 Endpoints da Tag `staff` no Swagger (`/DOC/api/swagger.yaml`)
 
-| Método   | Rota                   | Parâmetros / Body                         | Resposta | Descrição Arquitetural                                                      |
-| :------- | :--------------------- | :---------------------------------------- | :------- | :-------------------------------------------------------------------------- |
-| `GET`    | `/staff`               | `?role=...&status=...&department=...`     | `200`    | Lista os colaboradores com filtros opcionais por cargo, setor ou status     |
-| `POST`   | `/staff`               | `StaffBody` (`name, username, role, ...`) | `201`    | Cadastra um novo membro da equipe com perfil de acesso e turno de trabalho  |
-| `GET`    | `/staff/{staffId}`     | Path param: `staffId`                     | `200`    | Consulta o perfil completo e permissões de um colaborador específico        |
-| `PUT`    | `/staff/{staffId}`     | Path param: `staffId`, Body: `StaffBody`  | `200`    | Atualiza dados cadastrais, departamento, turno, cargo ou status do operador |
-| `DELETE` | `/staff/{staffId}`     | Path param: `staffId`                     | `200`    | Desativa ou remove o colaborador da base do sistema                         |
+| Método   | Rota               | Parâmetros / Body                         | Resposta | Descrição Arquitetural                                                      |
+| :------- | :----------------- | :---------------------------------------- | :------- | :-------------------------------------------------------------------------- |
+| `GET`    | `/staff`           | `?role=...&status=...&department=...`     | `200`    | Lista os colaboradores com filtros opcionais por cargo, setor ou status     |
+| `POST`   | `/staff`           | `StaffBody` (`name, username, role, ...`) | `201`    | Cadastra um novo membro da equipe com perfil de acesso e turno de trabalho  |
+| `GET`    | `/staff/{staffId}` | Path param: `staffId`                     | `200`    | Consulta o perfil completo e permissões de um colaborador específico        |
+| `PUT`    | `/staff/{staffId}` | Path param: `staffId`, Body: `StaffBody`  | `200`    | Atualiza dados cadastrais, departamento, turno, cargo ou status do operador |
+| `DELETE` | `/staff/{staffId}` | Path param: `staffId`                     | `200`    | Desativa ou remove o colaborador da base do sistema                         |
 
 ---
 
@@ -361,7 +361,9 @@ export function MeuMenu() {
 
   return (
     <div>
-      <span>Operador: {currentUser?.name} ({currentUser?.roleLabel})</span>
+      <span>
+        Operador: {currentUser?.name} ({currentUser?.roleLabel})
+      </span>
       {can("viewMetrics") && <IndicadoresFinanceiros />}
       {can("manageStaff") && <BotaoGestaoEquipe />}
     </div>
@@ -378,18 +380,18 @@ Para transformar o CloudInn em uma ferramenta hoteleira de alto refinamento ergo
 
 #### 7.4.1 Matriz de Componentes e Padrões de Animação
 
-| Componente / Fluxo | Padrão Motion Aplicado | Configuração Física / Transição | Propósito e Benefício UX |
-| :--- | :--- | :--- | :--- |
-| **Transição de Rotas** (`App.jsx`) | `<AnimatePresence mode="wait">` + `<motion.div>` | `opacity: 0 → 1`, `y: 8 → 0`, `duration: 0.18s` | Elimina cortes abruptos de tela, comunicando mudança de módulo de forma contínua. |
-| **Drawer / Sidebar Mobile** (`AppLayout.jsx`) | `<motion.aside>` + `<motion.div>` (backdrop) | Slide lateral com mola: `x: "-100%" → 0%`, `damping: 30`, `stiffness: 300` | Sensação tátil e natural de gaveta ao abrir/fechar o menu em smartphones e tablets. |
-| **Indicador da Rota Ativa** (`Sidebar.jsx`) | `<motion.div layoutId="activeNavTab">` | Mola fluida contínua: `stiffness: 500`, `damping: 35` | O fundo ativo desliza suavemente entre os itens do menu conforme a rota selecionada muda. |
-| **Modais Operacionais** (`Modal.jsx`) | `<AnimatePresence>` + `<motion.div>` | Backdrop fade (`0 → 1`), Dialog: `scale: 0.96 → 1`, `y: 12 → 0`, spring `damping: 25` | Foco progressivo com aceleração suave e fechamento limpo via teardown de animação. |
-| **Sistema de Toasts** (`Toast.jsx`) | `<AnimatePresence>` + `<motion.div>` | Entrada lateral: `x: 40 → 0`, `opacity: 0 → 1`, saída: `x: 40`, `opacity: 0` | Empilhamento dinâmico e desaparecimento suave após o temporizador ou fechamento manual. |
-| **Abas de Filtro Operacional** (`ReservationsPage.jsx` & `RoomsPage.jsx`) | `layoutId="active...Indicator"` | Deslizamento horizontal com física: `stiffness: 400`, `damping: 32` | Sinalização visual nítida da categoria selecionada sem recálculo de layout desnecessário. |
-| **Menu de Perfil e RBAC** (`Header.jsx`) | Popover com `<AnimatePresence>` e spring | `scale: 0.95 → 1`, `y: -6 → 0`, `damping: 25`, `stiffness: 350` | Abertura instantânea e contextual do seletor rápido de colaboradores e troca de visão. |
-| **Cartões de Métrica & Ações** (`DashboardPage.jsx` & `MetricCard.jsx`) | Grid com `staggerChildren: 0.08s` + `whileHover={{ y: -3 }}` | Animação cascateada na entrada do dashboard e elevação sutil sob o cursor do mouse | Facilita a leitura escaneável de métricas chave e realça elementos clicáveis. |
-| **Cartões de Quarto** (`RoomCard.jsx`) | `layout` + `whileHover={{ y: -2 }}` | Transição fluida de posição durante reordenação e filtragem de status | Suaviza reorganização dos quartos ao alternar entre disponíveis, ocupados e sujos. |
-| **Tela de Login** (`LoginPage.jsx`) | Entrada coordenada de colunas + `AnimatePresence` | Colunas: `x: ±16 → 0`, feedback de erro com animação de altura, cards com `whileHover` | Apresentação acolhedora do ambiente corporativo com seleção rápida de perfis. |
+| Componente / Fluxo                                                        | Padrão Motion Aplicado                                       | Configuração Física / Transição                                                        | Propósito e Benefício UX                                                                  |
+| :------------------------------------------------------------------------ | :----------------------------------------------------------- | :------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------- |
+| **Transição de Rotas** (`App.jsx`)                                        | `<AnimatePresence mode="wait">` + `<motion.div>`             | `opacity: 0 → 1`, `y: 8 → 0`, `duration: 0.18s`                                        | Elimina cortes abruptos de tela, comunicando mudança de módulo de forma contínua.         |
+| **Drawer / Sidebar Mobile** (`AppLayout.jsx`)                             | `<motion.aside>` + `<motion.div>` (backdrop)                 | Slide lateral com mola: `x: "-100%" → 0%`, `damping: 30`, `stiffness: 300`             | Sensação tátil e natural de gaveta ao abrir/fechar o menu em smartphones e tablets.       |
+| **Indicador da Rota Ativa** (`Sidebar.jsx`)                               | `<motion.div layoutId="activeNavTab">`                       | Mola fluida contínua: `stiffness: 500`, `damping: 35`                                  | O fundo ativo desliza suavemente entre os itens do menu conforme a rota selecionada muda. |
+| **Modais Operacionais** (`Modal.jsx`)                                     | `<AnimatePresence>` + `<motion.div>`                         | Backdrop fade (`0 → 1`), Dialog: `scale: 0.96 → 1`, `y: 12 → 0`, spring `damping: 25`  | Foco progressivo com aceleração suave e fechamento limpo via teardown de animação.        |
+| **Sistema de Toasts** (`Toast.jsx`)                                       | `<AnimatePresence>` + `<motion.div>`                         | Entrada lateral: `x: 40 → 0`, `opacity: 0 → 1`, saída: `x: 40`, `opacity: 0`           | Empilhamento dinâmico e desaparecimento suave após o temporizador ou fechamento manual.   |
+| **Abas de Filtro Operacional** (`ReservationsPage.jsx` & `RoomsPage.jsx`) | `layoutId="active...Indicator"`                              | Deslizamento horizontal com física: `stiffness: 400`, `damping: 32`                    | Sinalização visual nítida da categoria selecionada sem recálculo de layout desnecessário. |
+| **Menu de Perfil e RBAC** (`Header.jsx`)                                  | Popover com `<AnimatePresence>` e spring                     | `scale: 0.95 → 1`, `y: -6 → 0`, `damping: 25`, `stiffness: 350`                        | Abertura instantânea e contextual do seletor rápido de colaboradores e troca de visão.    |
+| **Cartões de Métrica & Ações** (`DashboardPage.jsx` & `MetricCard.jsx`)   | Grid com `staggerChildren: 0.08s` + `whileHover={{ y: -3 }}` | Animação cascateada na entrada do dashboard e elevação sutil sob o cursor do mouse     | Facilita a leitura escaneável de métricas chave e realça elementos clicáveis.             |
+| **Cartões de Quarto** (`RoomCard.jsx`)                                    | `layout` + `whileHover={{ y: -2 }}`                          | Transição fluida de posição durante reordenação e filtragem de status                  | Suaviza reorganização dos quartos ao alternar entre disponíveis, ocupados e sujos.        |
+| **Tela de Login** (`LoginPage.jsx`)                                       | Entrada coordenada de colunas + `AnimatePresence`            | Colunas: `x: ±16 → 0`, feedback de erro com animação de altura, cards com `whileHover` | Apresentação acolhedora do ambiente corporativo com seleção rápida de perfis.             |
 
 #### 7.4.2 Exemplo Arquitetural de Rota com AnimatePresence
 
@@ -407,12 +409,12 @@ import { AnimatePresence, motion } from "motion/react";
   >
     {renderContent()}
   </motion.div>
-</AnimatePresence>
+</AnimatePresence>;
 ```
 
 #### 7.4.3 Princípio do layoutId para Elementos Compartilhados
 
-O uso da diretiva `layoutId` do Motion permite que elementos compartilhados — como o fundo iluminado do menu ativo na `Sidebar` ou a linha marcadora das abas em `ReservationsPage` e `RoomsPage` — transitem fluidamente entre posições no DOM através de interpolação geométrica FLIP (*First, Last, Invert, Play*), garantindo 60fps constantes mesmo em dispositivos de menor capacidade computacional:
+O uso da diretiva `layoutId` do Motion permite que elementos compartilhados — como o fundo iluminado do menu ativo na `Sidebar` ou a linha marcadora das abas em `ReservationsPage` e `RoomsPage` — transitem fluidamente entre posições no DOM através de interpolação geométrica FLIP (_First, Last, Invert, Play_), garantindo 60fps constantes mesmo em dispositivos de menor capacidade computacional:
 
 ```jsx
 // src/components/layout/Sidebar.jsx
@@ -435,13 +437,13 @@ A comunicação com o backend ocorre através da classe `ApiClient` (`src/servic
 
 ### 8.1 Mapeamento de Funções do Azure no Frontend
 
-| Função Azure Backend    | Variável de Ambiente       | Método     | Entidades e Operações Suportadas                                                                     |
-| :---------------------- | :------------------------- | :--------- | :--------------------------------------------------------------------------------------------------- |
-| `fc_gp_cloudInn_select` | `VITE_CLOUDINN_SELECT_URL` | `GET`      | Consulta reservas, quartos, hóspedes e equipe (`entity=reservation\|room\|guest\|staff`)             |
-| `fc_gp_cloudInn_insert` | `VITE_CLOUDINN_INSERT_URL` | `POST`     | Cadastro de reservas, quartos, hóspedes e novos colaboradores (`staff` com índices em `id`/`username`)|
-| `fc_gp_cloudInn_update` | `VITE_CLOUDINN_UPDATE_URL` | `PUT/POST` | Check-in (`action=checkin`), check-out (`action=checkout`), quartos e atualização de staff          |
-| `fc_gp_cloudInn_delete` | `VITE_CLOUDINN_DELETE_URL` | `DELETE`   | Exclusão/desativação de reservas, quartos, hóspedes e colaboradores (`entity=staff`)                 |
-| `fc_gp_cloudInn_health` | `VITE_CLOUDINN_HEALTH_URL` | `GET`      | Verificação de disponibilidade, conectividade MongoDB e integridade das coleções                     |
+| Função Azure Backend    | Variável de Ambiente       | Método     | Entidades e Operações Suportadas                                                                       |
+| :---------------------- | :------------------------- | :--------- | :----------------------------------------------------------------------------------------------------- |
+| `fc_gp_cloudInn_select` | `VITE_CLOUDINN_SELECT_URL` | `GET`      | Consulta reservas, quartos, hóspedes e equipe (`entity=reservation\|room\|guest\|staff`)               |
+| `fc_gp_cloudInn_insert` | `VITE_CLOUDINN_INSERT_URL` | `POST`     | Cadastro de reservas, quartos, hóspedes e novos colaboradores (`staff` com índices em `id`/`username`) |
+| `fc_gp_cloudInn_update` | `VITE_CLOUDINN_UPDATE_URL` | `PUT/POST` | Check-in (`action=checkin`), check-out (`action=checkout`), quartos e atualização de staff             |
+| `fc_gp_cloudInn_delete` | `VITE_CLOUDINN_DELETE_URL` | `DELETE`   | Exclusão/desativação de reservas, quartos, hóspedes e colaboradores (`entity=staff`)                   |
+| `fc_gp_cloudInn_health` | `VITE_CLOUDINN_HEALTH_URL` | `GET`      | Verificação de disponibilidade, conectividade MongoDB e integridade das coleções                       |
 
 ### 8.2 Fallback Gracioso e Alta Disponibilidade
 
