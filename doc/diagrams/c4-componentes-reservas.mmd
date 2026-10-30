@@ -1,0 +1,46 @@
+C4Component
+    title Diagrama de Componentes (Nível 3) - Reservas/Guests Service (Azure SQL Database)
+
+    Container(gateway, "API Gateway Interno", "Azure API Management", "Encaminha tráfego HTTP autenticado.")
+    Container(service_bus, "Azure Service Bus", "Topics / Subscriptions", "Barramento de eventos corporativo.")
+
+    Container_Boundary(reservas_boundary, "Reservas/Guests Service (NestJS / Clean Architecture)") {
+        Component(res_ctrl, "ReservationsController", "Presentation / NestJS", "Endpoints REST para criação, consulta, check-in e check-out de reservas.")
+        Component(guest_ctrl, "GuestsController", "Presentation / NestJS", "Endpoints REST para gestão cadastral de hóspedes e documentos.")
+        Component(ota_ctrl, "OtaWebhookController", "Presentation / NestJS", "Ponto de entrada dedicado para webhooks de canais externos com idempotência estrita.")
+
+        Component(slice_create_res, "CreateReservationHandler", "Application / Vertical Slice", "Valida sobreposição de datas via SQL, verifica idempotência e cria a reserva.")
+        Component(slice_checkin, "CheckInHandler", "Application / Vertical Slice", "Executa a transição da reserva para active e grava evento de check-in na outbox.")
+        Component(slice_checkout, "CheckOutHandler", "Application / Vertical Slice", "Executa a conclusão da estadia (completed) e enfileira CheckOutCompleted na outbox.")
+
+        Component(domain_res, "Reservation Aggregate", "Domain Model", "Entidade pura de reserva, validação de regras temporais e cálculo de estadias.")
+        Component(domain_guest, "Guest Entity", "Domain Model", "Entidade de hóspede com validação de documento (CPF/Passaporte) e contatos.")
+        Component(sql_ports, "Repository Interfaces (Ports)", "Domain / Ports", "Contratos IReservationRepository, IGuestRepository, IOutboxRepository.")
+
+        Component(sql_adapter, "AzureSqlRepositoryAdapter", "Infrastructure / TypeORM", "Implementação concreta que executa transações ACID no Azure SQL Database.")
+        Component(outbox_worker, "TransactionalOutboxWorker", "Infrastructure / Background Job", "Varre a tabela Outbox em transação e publica mensagens no Azure Service Bus com garantia at-least-once.")
+    }
+
+    ContainerDb(sql_db, "Azure SQL Database", "Relational Database (PaaS)", "Tabelas: Guests, Reservations, Outbox, IdempotencyKeys, ReservationLogs.")
+
+    Rel(gateway, res_ctrl, "HTTP REST", "JSON")
+    Rel(gateway, guest_ctrl, "HTTP REST", "JSON")
+    Rel(gateway, ota_ctrl, "Webhook POST", "JSON")
+
+    Rel(ota_ctrl, slice_create_res, "Processa reserva externa")
+    Rel(res_ctrl, slice_create_res, "Cria reserva manual")
+    Rel(res_ctrl, slice_checkin, "Registra check-in")
+    Rel(res_ctrl, slice_checkout, "Registra check-out")
+
+    Rel(slice_create_res, domain_res, "Valida regras e invariantes de reserva")
+    Rel(slice_create_res, domain_guest, "Vincula dados do hóspede")
+    Rel(slice_create_res, sql_ports, "Persiste reserva e grava registro Outbox")
+    Rel(slice_checkout, sql_ports, "Atualiza status e grava CheckOutCompleted na Outbox")
+
+    Rel(sql_ports, sql_adapter, "Implementa contratos")
+    Rel(sql_adapter, sql_db, "Transações ACID e isolamento SERIALIZABLE / READ COMMITTED", "TDS / TLS")
+
+    Rel(outbox_worker, sql_db, "Lê registros pendentes da Outbox", "TDS / TLS")
+    Rel(outbox_worker, service_bus, "Despacha eventos de domínio para o barramento", "AMQP 1.0")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

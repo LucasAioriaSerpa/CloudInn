@@ -1,0 +1,7 @@
+{
+  "name": "cloudinn-bff",
+  "version": "3.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": { "test": "node --test --test-reporter spec" }
+}

@@ -1,0 +1,307 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1200" width="100%" height="100%" style="background-color: #0B1120; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <!-- Filtros de Sombra e Gradientes -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+    <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <linearGradient id="hotel-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#047857"/>
+      <stop offset="100%" stop-color="#10B981"/>
+    </linearGradient>
+    <linearGradient id="bus-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6D28D9"/>
+      <stop offset="100%" stop-color="#8B5CF6"/>
+    </linearGradient>
+    <linearGradient id="sql-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284C7"/>
+      <stop offset="100%" stop-color="#0369A1"/>
+    </linearGradient>
+    <linearGradient id="mongo-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#15803D"/>
+      <stop offset="100%" stop-color="#166534"/>
+    </linearGradient>
+
+    <!-- Marcadores de Setas -->
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#60A5FA"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#34D399"/>
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#A78BFA"/>
+    </marker>
+    <marker id="arrow-white" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#CBD5E1"/>
+    </marker>
+  </defs>
+
+  <!-- Barra de Título Superior -->
+  <rect x="50" y="30" width="1500" height="85" rx="14" fill="#1E293B" stroke="#334155" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="80" y="68" fill="#F8FAFC" font-size="24" font-weight="700">CloudInn — Diagrama de Componentes Macro do Backend</text>
+  <text x="80" y="94" fill="#94A3B8" font-size="14">Arquitetura de Microsserviços, Fatias Verticais (Vertical Slices), Clean Architecture e Persistência Poliglota</text>
+  <rect x="1310" y="52" width="210" height="36" rx="18" fill="#3B82F6" fill-opacity="0.15" stroke="#3B82F6" stroke-width="1"/>
+  <text x="1415" y="75" fill="#60A5FA" font-size="13" font-weight="600" text-anchor="middle">Microsserviços Desacoplados</text>
+
+  <!-- ========================================== -->
+  <!-- CAMADA DE CLIENTES                         -->
+  <!-- ========================================== -->
+  <g transform="translate(50, 145)">
+    <rect width="1500" height="80" rx="10" fill="#1E293B" stroke="#475569" stroke-width="1"/>
+    <text x="30" y="46" fill="#94A3B8" font-size="14" font-weight="700">CLIENTES / ENTRADA:</text>
+    
+    <rect x="220" y="16" width="380" height="48" rx="8" fill="#0F172A" stroke="#3B82F6" stroke-width="1.5"/>
+    <text x="410" y="45" fill="#93C5FD" font-size="14" font-weight="600" text-anchor="middle">OTAs / Webhooks (Booking, Airbnb, Expedia)</text>
+
+    <rect x="880" y="16" width="480" height="48" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1.5"/>
+    <text x="1120" y="45" fill="#6EE7B7" font-size="14" font-weight="600" text-anchor="middle">Painel Web Operacional (Recepção &amp; Governança PMS)</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- CONTAINER: RESERVAS SERVICE                -->
+  <!-- ========================================== -->
+  <g transform="translate(50, 255)" filter="url(#shadow)">
+    <rect width="730" height="660" rx="14" fill="#1E293B" stroke="#2563EB" stroke-width="2"/>
+    <path d="M 0 0 L 730 0 L 730 45 L 0 45 Z" fill="url(#primary-grad)" rx="14"/>
+    <text x="25" y="28" fill="#FFFFFF" font-size="16" font-weight="700">RESERVAS SERVICE (Microsserviço Transacional)</text>
+    <text x="705" y="28" fill="#DBEAFE" font-size="12" font-weight="600" text-anchor="end">Azure SQL / Relacional</text>
+
+    <!-- Presentation -->
+    <rect x="25" y="60" width="680" height="85" rx="8" fill="#0F172A" stroke="#3B82F6" stroke-width="1"/>
+    <text x="40" y="85" fill="#60A5FA" font-size="13" font-weight="700">Presentation / API Layer</text>
+    <rect x="40" y="95" width="290" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="50" y="118" fill="#E2E8F0" font-size="11">ReservationsController (POST/GET/DELETE)</text>
+    <rect x="350" y="95" width="230" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="360" y="118" fill="#E2E8F0" font-size="11">GuestsController (POST/GET)</text>
+
+    <!-- Vertical Slices -->
+    <rect x="25" y="160" width="680" height="155" rx="8" fill="#0F172A" stroke="#3B82F6" stroke-width="1"/>
+    <text x="40" y="185" fill="#60A5FA" font-size="13" font-weight="700">Vertical Slices (Features &amp; Handlers)</text>
+    
+    <g transform="translate(40, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#2563EB" stroke-width="1"/>
+      <text x="10" y="20" fill="#93C5FD" font-size="11" font-weight="700">CreateReservation</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Validator</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="80" fill="#94A3B8" font-size="10">• ResultDto</text>
+    </g>
+
+    <g transform="translate(205, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#2563EB" stroke-width="1"/>
+      <text x="10" y="20" fill="#93C5FD" font-size="11" font-weight="700">RegisterGuest</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Validator</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• Handler</text>
+    </g>
+
+    <g transform="translate(370, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#2563EB" stroke-width="1"/>
+      <text x="10" y="20" fill="#93C5FD" font-size="11" font-weight="700">GetReservation</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Query</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• DetailsDto</text>
+    </g>
+
+    <g transform="translate(535, 195)">
+      <rect width="150" height="105" rx="6" fill="#1E293B" stroke="#2563EB" stroke-width="1"/>
+      <text x="10" y="20" fill="#93C5FD" font-size="11" font-weight="700">CancelReservation</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• EventDispatcher</text>
+    </g>
+
+    <!-- Domain -->
+    <rect x="25" y="330" width="680" height="135" rx="8" fill="#0F172A" stroke="#8B5CF6" stroke-width="1"/>
+    <text x="40" y="355" fill="#A78BFA" font-size="13" font-weight="700">Domain Layer (Entidades e Contratos)</text>
+    
+    <rect x="40" y="370" width="180" height="80" rx="6" fill="#1E293B" stroke="#7C3AED" stroke-width="1"/>
+    <text x="50" y="392" fill="#DDD6FE" font-size="11" font-weight="700">Entity: Reservation</text>
+    <text x="50" y="410" fill="#94A3B8" font-size="10">• Invariantes de Datas</text>
+    <text x="50" y="426" fill="#94A3B8" font-size="10">• Máquina de Estados</text>
+
+    <rect x="240" y="370" width="160" height="80" rx="6" fill="#1E293B" stroke="#7C3AED" stroke-width="1"/>
+    <text x="250" y="392" fill="#DDD6FE" font-size="11" font-weight="700">Entity: Guest</text>
+    <text x="250" y="410" fill="#94A3B8" font-size="10">• Documento / CPF</text>
+    <text x="250" y="426" fill="#94A3B8" font-size="10">• Dados de Contato</text>
+
+    <rect x="420" y="370" width="265" height="80" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1"/>
+    <text x="430" y="392" fill="#BAE6FD" font-size="11" font-weight="700">Contratos de Repositório</text>
+    <text x="430" y="410" fill="#94A3B8" font-size="10">• IReservationRepository</text>
+    <text x="430" y="426" fill="#94A3B8" font-size="10">• IGuestRepository | IHotelServiceClient</text>
+
+    <!-- Infrastructure -->
+    <rect x="25" y="480" width="680" height="155" rx="8" fill="#0F172A" stroke="#F97316" stroke-width="1"/>
+    <text x="40" y="505" fill="#FB923C" font-size="13" font-weight="700">Infrastructure Layer (Persistência e Comunicação)</text>
+    
+    <rect x="40" y="520" width="200" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="50" y="542" fill="#FED7AA" font-size="11" font-weight="700">ReservationSqlRepository</text>
+    <text x="50" y="560" fill="#94A3B8" font-size="10">• Entity Framework Core</text>
+    <text x="50" y="576" fill="#94A3B8" font-size="10">• Transação ACID Isolada</text>
+    <text x="50" y="594" fill="#38BDF8" font-size="9">..|&gt; IReservationRepository</text>
+
+    <rect x="260" y="520" width="190" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="270" y="542" fill="#FED7AA" font-size="11" font-weight="700">GuestSqlRepository</text>
+    <text x="270" y="560" fill="#94A3B8" font-size="10">• Entity Framework Core</text>
+    <text x="270" y="576" fill="#94A3B8" font-size="10">• Índice Único em CPF</text>
+    <text x="270" y="594" fill="#38BDF8" font-size="9">..|&gt; IGuestRepository</text>
+
+    <rect x="470" y="520" width="215" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="480" y="542" fill="#FED7AA" font-size="11" font-weight="700">HotelServiceHttpAdapter</text>
+    <text x="480" y="560" fill="#94A3B8" font-size="10">• HttpClient com Polly</text>
+    <text x="480" y="576" fill="#94A3B8" font-size="10">• Timeout + Exponential Retry</text>
+    <text x="480" y="594" fill="#38BDF8" font-size="9">..|&gt; IHotelServiceClient</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- CONTAINER: HOTEL SERVICE                   -->
+  <!-- ========================================== -->
+  <g transform="translate(820, 255)" filter="url(#shadow)">
+    <rect width="730" height="660" rx="14" fill="#1E293B" stroke="#10B981" stroke-width="2"/>
+    <path d="M 0 0 L 730 0 L 730 45 L 0 45 Z" fill="url(#hotel-grad)" rx="14"/>
+    <text x="25" y="28" fill="#FFFFFF" font-size="16" font-weight="700">HOTEL SERVICE (Microsserviço Operacional &amp; Governança)</text>
+    <text x="705" y="28" fill="#D1FAE5" font-size="12" font-weight="600" text-anchor="end">MongoDB Atlas / Documental</text>
+
+    <!-- Presentation -->
+    <rect x="25" y="60" width="680" height="85" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1"/>
+    <text x="40" y="85" fill="#34D399" font-size="13" font-weight="700">Presentation / API Layer</text>
+    <rect x="40" y="95" width="180" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="50" y="118" fill="#E2E8F0" font-size="11">CheckInController (POST)</text>
+    <rect x="235" y="95" width="190" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="245" y="118" fill="#E2E8F0" font-size="11">CheckOutController (POST)</text>
+    <rect x="440" y="95" width="245" height="38" rx="6" fill="#1E293B" stroke="#334155" stroke-width="1"/>
+    <text x="450" y="118" fill="#E2E8F0" font-size="11">Rooms / Staff / Rates Controllers</text>
+
+    <!-- Vertical Slices -->
+    <rect x="25" y="160" width="680" height="155" rx="8" fill="#0F172A" stroke="#10B981" stroke-width="1"/>
+    <text x="40" y="185" fill="#34D399" font-size="13" font-weight="700">Vertical Slices (Operações de Balcão e Governança)</text>
+    
+    <g transform="translate(40, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#059669" stroke-width="1"/>
+      <text x="10" y="20" fill="#A7F3D0" font-size="11" font-weight="700">CheckInSlice</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Validator</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="80" fill="#94A3B8" font-size="10">• Status: OCCUPIED</text>
+    </g>
+
+    <g transform="translate(205, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#059669" stroke-width="1"/>
+      <text x="10" y="20" fill="#A7F3D0" font-size="11" font-weight="700">CheckOutSlice</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• Status: DIRTY</text>
+      <text x="10" y="80" fill="#94A3B8" font-size="10">• Cria CleaningTask</text>
+    </g>
+
+    <g transform="translate(370, 195)">
+      <rect width="145" height="105" rx="6" fill="#1E293B" stroke="#059669" stroke-width="1"/>
+      <text x="10" y="20" fill="#A7F3D0" font-size="11" font-weight="700">UpdateRoomStatus</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• Command</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• Handler</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• CLEANING</text>
+      <text x="10" y="80" fill="#94A3B8" font-size="10">• AVAILABLE</text>
+    </g>
+
+    <g transform="translate(535, 195)">
+      <rect width="150" height="105" rx="6" fill="#1E293B" stroke="#059669" stroke-width="1"/>
+      <text x="10" y="20" fill="#A7F3D0" font-size="11" font-weight="700">ManageStaff &amp; Rates</text>
+      <text x="10" y="38" fill="#94A3B8" font-size="10">• RegisterStaff</text>
+      <text x="10" y="52" fill="#94A3B8" font-size="10">• UpdateDailyRate</text>
+      <text x="10" y="66" fill="#94A3B8" font-size="10">• Configuração Taxas</text>
+    </g>
+
+    <!-- Domain -->
+    <rect x="25" y="330" width="680" height="135" rx="8" fill="#0F172A" stroke="#8B5CF6" stroke-width="1"/>
+    <text x="40" y="355" fill="#A78BFA" font-size="13" font-weight="700">Domain Layer (Entidades de Hotelaria e Regras)</text>
+    
+    <rect x="40" y="370" width="180" height="80" rx="6" fill="#1E293B" stroke="#7C3AED" stroke-width="1"/>
+    <text x="50" y="392" fill="#DDD6FE" font-size="11" font-weight="700">Entity: Room</text>
+    <text x="50" y="410" fill="#94A3B8" font-size="10">• Tipologia: STD/LUX/STE</text>
+    <text x="50" y="426" fill="#94A3B8" font-size="10">• Diária base + TaxRate</text>
+
+    <rect x="240" y="370" width="160" height="80" rx="6" fill="#1E293B" stroke="#7C3AED" stroke-width="1"/>
+    <text x="250" y="392" fill="#DDD6FE" font-size="11" font-weight="700">Entity: CleaningTask</text>
+    <text x="250" y="410" fill="#94A3B8" font-size="10">• Status de Limpeza</text>
+    <text x="250" y="426" fill="#94A3B8" font-size="10">• Camareira / StaffId</text>
+
+    <rect x="420" y="370" width="265" height="80" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="1"/>
+    <text x="430" y="392" fill="#BAE6FD" font-size="11" font-weight="700">Contratos de Repositório</text>
+    <text x="430" y="410" fill="#94A3B8" font-size="10">• IRoomRepository</text>
+    <text x="430" y="426" fill="#94A3B8" font-size="10">• ICleaningTaskRepository | IStaffRepository</text>
+
+    <!-- Infrastructure -->
+    <rect x="25" y="480" width="680" height="155" rx="8" fill="#0F172A" stroke="#F97316" stroke-width="1"/>
+    <text x="40" y="505" fill="#FB923C" font-size="13" font-weight="700">Infrastructure Layer (MongoDB Atlas NoSQL)</text>
+    
+    <rect x="40" y="520" width="200" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="50" y="542" fill="#FED7AA" font-size="11" font-weight="700">RoomMongoRepository</text>
+    <text x="50" y="560" fill="#94A3B8" font-size="10">• MongoDB BSON Collection</text>
+    <text x="50" y="576" fill="#94A3B8" font-size="10">• UpdateStatusAsync()</text>
+    <text x="50" y="594" fill="#38BDF8" font-size="9">..|&gt; IRoomRepository</text>
+
+    <rect x="260" y="520" width="200" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="270" y="542" fill="#FED7AA" font-size="11" font-weight="700">CleaningTaskMongoRepo</text>
+    <text x="270" y="560" fill="#94A3B8" font-size="10">• Coleção 'cleaning_tasks'</text>
+    <text x="270" y="576" fill="#94A3B8" font-size="10">• Histórico de Auditoria</text>
+    <text x="270" y="594" fill="#38BDF8" font-size="9">..|&gt; ICleaningTaskRepository</text>
+
+    <rect x="480" y="520" width="205" height="95" rx="6" fill="#1E293B" stroke="#EA580C" stroke-width="1"/>
+    <text x="490" y="542" fill="#FED7AA" font-size="11" font-weight="700">StaffMongoRepository</text>
+    <text x="490" y="560" fill="#94A3B8" font-size="10">• Coleção 'staff'</text>
+    <text x="490" y="576" fill="#94A3B8" font-size="10">• RBAC e Perfis de Acesso</text>
+    <text x="490" y="594" fill="#38BDF8" font-size="9">..|&gt; IStaffRepository</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- BARRAMENTO DE MENSAGERIA                   -->
+  <!-- ========================================== -->
+  <g transform="translate(50, 935)" filter="url(#shadow)">
+    <rect width="1500" height="65" rx="10" fill="url(#bus-grad)"/>
+    <text x="750" y="38" fill="#FFFFFF" font-size="15" font-weight="700" text-anchor="middle">BARRAMENTO DE EVENTOS ASSÍNCRONOS: Azure Service Bus / RabbitMQ</text>
+    <text x="750" y="55" fill="#E9D5FF" font-size="12" text-anchor="middle">Eventos: ReservationCreatedEvent, ReservationCancelledEvent, CheckOutCompletedEvent</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- CAMADA DE PERSISTÊNCIA FÍSICA              -->
+  <!-- ========================================== -->
+  <g transform="translate(50, 1025)" filter="url(#shadow)">
+    <!-- Azure SQL -->
+    <rect x="0" y="0" width="730" height="135" rx="12" fill="url(#sql-grad)" stroke="#38BDF8" stroke-width="1.5"/>
+    <text x="25" y="35" fill="#FFFFFF" font-size="16" font-weight="700">Azure SQL Database / Atlas SQL</text>
+    <text x="25" y="58" fill="#BAE6FD" font-size="13">Paradigma Relacional • Transações ACID Estritas</text>
+    <text x="25" y="82" fill="#E0F2FE" font-size="12">• Tabela: Reservations (PK Id, FK GuestId, RoomNumber, Datas, Total, Status)</text>
+    <text x="25" y="102" fill="#E0F2FE" font-size="12">• Tabela: Guests (PK Id, Índice Único em Document/CPF, Name, Email, Phone)</text>
+    <text x="25" y="122" fill="#E0F2FE" font-size="12">• Isolamento de concorrência para prevenção de Overbooking</text>
+
+    <!-- MongoDB Atlas -->
+    <rect x="770" y="0" width="730" height="135" rx="12" fill="url(#mongo-grad)" stroke="#4ADE80" stroke-width="1.5"/>
+    <text x="795" y="35" fill="#FFFFFF" font-size="16" font-weight="700">MongoDB Atlas (NoSQL Document Store)</text>
+    <text x="795" y="58" fill="#BBF7D0" font-size="13">Paradigma Documental • BSON Schema Flexível e Alta Performance de Leitura</text>
+    <text x="795" y="82" fill="#DCFCE7" font-size="12">• Coleção 'rooms': number (Índice Único), type, status, basePrice, taxes</text>
+    <text x="795" y="102" fill="#DCFCE7" font-size="12">• Coleção 'cleaning_tasks': roomNumber, status, assignedStaffId, timestamps</text>
+    <text x="795" y="122" fill="#DCFCE7" font-size="12">• Coleção 'staff': username, fullName, role (RBAC), shift, isActive</text>
+  </g>
+
+  <!-- ========================================== -->
+  <!-- CONECTORES E LINHAS DE COMUNICAÇÃO         -->
+  <!-- ========================================== -->
+  <!-- Clientes -> APIs -->
+  <path d="M 410 225 L 410 315" stroke="#60A5FA" stroke-width="2" marker-end="url(#arrow-blue)"/>
+  <path d="M 1120 225 L 1120 315" stroke="#34D399" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+  <!-- Chamada Síncrona Inter-Serviços (HTTP com Polly) -->
+  <path d="M 740 820 L 845 820" stroke="#F59E0B" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrow-white)"/>
+  <rect x="735" y="785" width="105" height="30" rx="6" fill="#78350F" stroke="#F59E0B" stroke-width="1"/>
+  <text x="787" y="805" fill="#FDE68A" font-size="10" font-weight="700" text-anchor="middle">HTTP Síncrono</text>
+
+  <!-- Reservas Infra -> Azure SQL -->
+  <path d="M 410 915 L 410 1025" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#arrow-blue)"/>
+
+  <!-- Hotel Infra -> Mongo Atlas -->
+  <path d="M 1180 915 L 1180 1025" stroke="#4ADE80" stroke-width="2.5" marker-end="url(#arrow-green)"/>
+</svg>

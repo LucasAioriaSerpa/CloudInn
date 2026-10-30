@@ -1,0 +1,88 @@
+---
+title: C4 Nivel 4 (Codigo) - Vertical Slice CreateReservation (Reservas/Guests Service)
+---
+classDiagram
+    class ReservationsController {
+        +createReservation(dto: CreateReservationDto): Promise~ReservationResponseDto~
+    }
+
+    class CreateReservationCommand {
+        +guestId: string
+        +roomId: string
+        +hotelId: string
+        +checkInDate: Date
+        +checkOutDate: Date
+        +idempotencyKey: string
+        +originChannel: string
+    }
+
+    class CreateReservationValidator {
+        +validate(cmd: CreateReservationCommand): ValidationResult
+    }
+
+    class CreateReservationHandler {
+        -reservationRepo: IReservationRepository
+        -outboxRepo: IOutboxRepository
+        -unitOfWork: IUnitOfWork
+        +execute(cmd: CreateReservationCommand): Promise~ReservationResult~
+    }
+
+    class IReservationRepository {
+        <<interface>>
+        +hasOverlappingReservation(roomId: string, start: Date, end: Date): Promise~boolean~
+        +save(reservation: Reservation): Promise~void~
+        +findById(id: string): Promise~Reservation~
+    }
+
+    class IOutboxRepository {
+        <<interface>>
+        +appendEvent(event: OutboxMessage): Promise~void~
+    }
+
+    class IUnitOfWork {
+        <<interface>>
+        +startTransaction(): Promise~void~
+        +commit(): Promise~void~
+        +rollback(): Promise~void~
+    }
+
+    class Reservation {
+        -id: string
+        -guestId: string
+        -roomId: string
+        -hotelId: string
+        -dateRange: DateRange
+        -status: ReservationStatus
+        +confirm(): void
+        +cancel(reason: string): void
+    }
+
+    class DateRange {
+        <<value object>>
+        +startDate: Date
+        +endDate: Date
+        +isValid(): boolean
+        +overlapsWith(other: DateRange): boolean
+    }
+
+    class AzureSqlReservationRepositoryAdapter {
+        -dataSource: DataSource
+        +hasOverlappingReservation(roomId: string, start: Date, end: Date): Promise~boolean~
+        +save(reservation: Reservation): Promise~void~
+    }
+
+    class AzureSqlOutboxRepositoryAdapter {
+        -dataSource: DataSource
+        +appendEvent(event: OutboxMessage): Promise~void~
+    }
+
+    ReservationsController --> CreateReservationCommand : instancia
+    ReservationsController --> CreateReservationHandler : invoca
+    CreateReservationHandler --> CreateReservationValidator : valida
+    CreateReservationHandler --> IUnitOfWork : gerencia transação ACID
+    CreateReservationHandler --> IReservationRepository : verifica sobreposição e salva
+    CreateReservationHandler --> IOutboxRepository : persiste na outbox
+    CreateReservationHandler --> Reservation : instancia entidade de domínio
+    Reservation --> DateRange : contém
+    IReservationRepository <|.. AzureSqlReservationRepositoryAdapter : implementa
+    IOutboxRepository <|.. AzureSqlOutboxRepositoryAdapter : implementa

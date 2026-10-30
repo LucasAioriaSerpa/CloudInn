@@ -1,0 +1,43 @@
+C4Component
+    title Diagrama de Componentes (Nível 3) - Hotel Service (MongoDB Atlas)
+
+    Container(gateway, "API Gateway Interno", "Azure API Management", "Encaminha tráfego HTTP autenticado.")
+    Container(service_bus, "Azure Service Bus", "Topics / Subscriptions", "Barramento de eventos corporativo.")
+
+    Container_Boundary(hotel_boundary, "Hotel Service (NestJS / Clean Architecture)") {
+        Component(hotel_ctrl, "Hotel & Room Controllers", "Presentation / NestJS", "Expõe endpoints REST para CRUD de Hotéis, Quartos, Diárias e Staff.")
+        Component(housekeeping_ctrl, "Housekeeping Controller", "Presentation / NestJS", "Controla transições de limpeza dos quartos e tarefas de governança.")
+        
+        Component(slice_cleaning, "SetRoomCleaningStatusHandler", "Application / Vertical Slice", "Executa a transição de estado do quarto (dirty -> cleaning -> available) e valida regras de negócio.")
+        Component(slice_room_crud, "RoomCrudHandlers", "Application / Vertical Slice", "Comandos e consultas para criação, atualização de tipologia e listagem de quartos.")
+        Component(slice_staff, "StaffManagementHandlers", "Application / Vertical Slice", "Gerencia colaboradores do hotel e permissões RBAC.")
+
+        Component(domain_room, "Room & Hotel Aggregate", "Domain Model", "Entidades puras com regras invariantes de status operacional e tipologias (STD, LUX, STE).")
+        Component(repo_ports, "Repository Interfaces (Ports)", "Domain / Ports", "Contratos abstratos IRoomRepository, IHotelRepository, IStaffRepository.")
+        
+        Component(mongo_adapter, "MongoDbRepositoryAdapter", "Infrastructure / Mongoose", "Implementação concreta que persiste dados em coleções BSON no MongoDB Atlas.")
+        Component(event_publisher, "ServiceBusEventPublisher", "Infrastructure / AMQP", "Publica eventos como RoomCleaningCompleted e RoomMarkedDirty no Service Bus.")
+        Component(event_consumer, "ReservationEventConsumer", "Infrastructure / AMQP Listener", "Consome eventos CheckOutCompleted e ReservationCreated para atualizar status dos quartos.")
+    }
+
+    ContainerDb(mongo_db, "MongoDB Atlas", "NoSQL Document Store", "Coleções: hotels, rooms, staff, dailyRates, cleaningTasks.")
+
+    Rel(gateway, hotel_ctrl, "HTTP REST", "JSON")
+    Rel(gateway, housekeeping_ctrl, "HTTP REST", "JSON")
+
+    Rel(hotel_ctrl, slice_room_crud, "Despacha comandos de quarto")
+    Rel(hotel_ctrl, slice_staff, "Despacha comandos de staff")
+    Rel(housekeeping_ctrl, slice_cleaning, "Despacha SetRoomCleaningStatusCommand")
+
+    Rel(slice_cleaning, domain_room, "Aplica transição de estado operacional")
+    Rel(slice_cleaning, repo_ports, "Persiste estado atualizado")
+    Rel(slice_cleaning, event_publisher, "Dispara evento de domínio de higienização")
+
+    Rel(repo_ports, mongo_adapter, "Implementa contratos")
+    Rel(mongo_adapter, mongo_db, "Operações CRUD / BSON", "MongoDB Driver")
+
+    Rel(event_publisher, service_bus, "Publica eventos de quarto", "AMQP 1.0")
+    Rel(service_bus, event_consumer, "Entrega eventos de check-out / reserva", "AMQP 1.0")
+    Rel(event_consumer, slice_room_crud, "Atualiza quarto para sujo/reservado")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Processamento Pesado sob Demanda via Azure Function
+
+    participant BFF as BFF NestJS
+    participant APIM as API Gateway (APIM)
+    participant Func as Azure Function Analítica (v4)
+    participant Insights as Azure Application Insights
+
+    BFF->>APIM: POST /api/v1/analytics/calculate
+    Note over BFF,APIM: Headers: x-correlation-id, Authorization Bearer
+    activate APIM
+    APIM->>APIM: Injeta Function Key gerenciada do Key Vault
+    APIM->>Func: POST /api/httpTriggerAnalytics (Payload de ocupação e histórico)
+    activate Func
+
+    Note over Func: Execução do Algoritmo Analítico:<br/>- Cálculo de Taxa de Ocupação Ponderada<br/>- Projeção de RevPAR (Revenue Per Available Room)<br/>- ADR (Average Daily Rate) Médio por Tipologia
+
+    alt Execução com Sucesso dentro da Janela (< 1200ms)
+        Func-->>APIM: 200 OK { occupancyRate: 78.4, projectedRevenue: 15420.50, revPar: 245.80 }
+        APIM-->>BFF: 200 OK (Dados Analíticos Consolidados)
+    else Exceção ou Cold Start Severo (> 2500ms)
+        Note over APIM,Func: Timeout de Gateway atingido (2.5s)
+        APIM->>Insights: Registra evento de lentidão / timeout
+        APIM-->>BFF: 504 Gateway Timeout { code: "ANALYTICS_TIMEOUT" }
+        Note over BFF: BFF Interceptor captura erro e aplica Fallback:<br/>- Retorna cálculo estimado em memória<br/>- Marca metadata.partial = true<br/>- Registra aviso no array de erros
+    end
+    deactivate Func
+    deactivate APIM

@@ -1,0 +1,9 @@
+{
+  "name": "cloudinn-backend",
+  "private": true,
+  "version": "3.0.0",
+  "description": "CloudInn backend containers aligned with arc42 v3",
+  "scripts": {
+    "test": "node --test --test-reporter spec"
+  }
+}
