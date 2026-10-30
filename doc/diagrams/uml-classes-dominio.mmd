@@ -1,0 +1,145 @@
+classDiagram
+    title Diagrama UML de Classes de Domínio - Bounded Contexts Hotel e Reservas
+
+    namespace HotelBoundedContext {
+        class Hotel {
+            -id: string
+            -name: string
+            -address: string
+            -cnpj: string
+            -phone: string
+            +addRoom(room: Room): void
+            +setDailyRate(rate: DailyRate): void
+        }
+
+        class Room {
+            -id: string
+            -hotelId: string
+            -number: string
+            -roomType: RoomType
+            -floor: int
+            -status: RoomStatus
+            -amenities: string[]
+            +markAsDirty(): void
+            +startCleaning(staffId: string): void
+            +completeCleaning(): void
+            +reserve(): void
+            +occupy(): void
+        }
+
+        class Staff {
+            -id: string
+            -hotelId: string
+            -name: string
+            -username: string
+            -role: StaffRole
+            -document: string
+            -status: string
+            +hasPermission(action: string): boolean
+        }
+
+        class DailyRate {
+            -id: string
+            -hotelId: string
+            -roomType: RoomType
+            -pricePerNight: decimal
+            -effectiveFrom: Date
+            -effectiveTo: Date
+            +isActiveAt(date: Date): boolean
+        }
+
+        class RoomStatus {
+            <<enumeration>>
+            AVAILABLE
+            RESERVED
+            OCCUPIED
+            DIRTY
+            CLEANING
+        }
+
+        class RoomType {
+            <<enumeration>>
+            STD (Standard)
+            DLX (Deluxe)
+            SUI (Suíte Master)
+            PRE (Presidencial)
+        }
+
+        class StaffRole {
+            <<enumeration>>
+            MANAGER
+            SUB_MANAGER
+            RECEPTIONIST
+            HOUSEKEEPER
+        }
+    }
+
+    namespace ReservasBoundedContext {
+        class Reservation {
+            -id: string
+            -code: string
+            -hotelIdRef: string
+            -roomIdRef: string
+            -guestId: string
+            -dateRange: DateRange
+            -status: ReservationStatus
+            -totalAmount: decimal
+            -originChannel: string
+            -createdAt: Date
+            +confirm(): void
+            +checkIn(): void
+            +checkOut(): void
+            +cancel(reason: string): void
+        }
+
+        class Guest {
+            -id: string
+            -name: string
+            -document: string
+            -email: string
+            -phone: string
+            -vipStatus: boolean
+            +updateContact(email: string, phone: string): void
+        }
+
+        class DateRange {
+            <<value object>>
+            -checkInDate: Date
+            -checkOutDate: Date
+            +nightsCount(): int
+            +overlapsWith(other: DateRange): boolean
+            +isFuture(): boolean
+        }
+
+        class ReservationStatus {
+            <<enumeration>>
+            PENDING
+            CONFIRMED
+            ACTIVE
+            COMPLETED
+            CANCELLED
+        }
+
+        class IdempotencyRecord {
+            -id: string
+            -key: string
+            -consumer: string
+            -responseHash: string
+            -createdAt: Date
+        }
+    }
+
+    Hotel "1" *-- "many" Room : agrega
+    Hotel "1" *-- "many" Staff : emprega
+    Hotel "1" *-- "many" DailyRate : define
+    Room --> RoomStatus : possui
+    Room --> RoomType : categorizado por
+    Staff --> StaffRole : atribuído a
+    DailyRate --> RoomType : referencia
+
+    Reservation "many" --> "1" Guest : pertence a
+    Reservation *-- "1" DateRange : período
+    Reservation --> ReservationStatus : ciclo de vida
+
+    Reservation ..> Room : "referencia logicamente via roomIdRef (sem FK física)"
+    Reservation ..> Hotel : "referencia logicamente via hotelIdRef (sem FK física)"

@@ -1,0 +1,57 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Check-out, Quarto Sujo e Ciclo de Governança
+
+    actor Receptionist as Recepcionista
+    actor Housekeeper as Governança / Camareira
+    participant MFE as Microfrontend React
+    participant BFF as BFF NestJS
+    participant APIM as API Gateway (APIM)
+    participant Res as Reservas Service (SQL)
+    participant Bus as Azure Service Bus
+    participant Hotel as Hotel Service (Mongo)
+    participant Mongo as MongoDB Atlas
+
+    %% 1. Check-out
+    Receptionist->>MFE: Realiza Check-out da Reserva #RES-501
+    MFE->>BFF: POST /api/v1/reservations/RES-501/checkout
+    BFF->>APIM: POST /api/v1/reservations/RES-501/checkout
+    APIM->>Res: POST /internal/reservations/RES-501/checkout
+    Note over Res: Transita reserva para 'COMPLETED', grava na Outbox
+    Res-->>APIM: 200 OK
+    APIM-->>BFF: 200 OK
+    BFF-->>MFE: 200 OK (Check-out Concluído)
+    Res->>Bus: Evento Assíncrono CheckOutCompleted (roomId: 'R201')
+
+    %% 2. Transição automática para Sujo (Dirty)
+    Bus->>Hotel: Consume CheckOutCompleted
+    activate Hotel
+    Hotel->>Mongo: updateOne({ id: 'R201' }, { $set: { status: 'dirty' } })
+    Hotel->>Mongo: insertOne({ taskType: 'cleaning', roomId: 'R201', status: 'pending' })
+    deactivate Hotel
+
+    %% 3. Início da Limpeza pela Governança
+    Housekeeper->>MFE: Seleciona Quarto 201 e clica "Iniciar Higienização"
+    MFE->>BFF: PATCH /api/v1/housekeeping/rooms/R201/status { status: 'cleaning' }
+    BFF->>APIM: PATCH /api/v1/housekeeping/rooms/R201/status
+    APIM->>Hotel: PATCH /rooms/R201/cleaning-status
+    activate Hotel
+    Hotel->>Mongo: updateOne({ id: 'R201' }, { $set: { status: 'cleaning' } })
+    Hotel-->>APIM: 200 OK { roomId: 'R201', status: 'cleaning' }
+    deactivate Hotel
+    APIM-->>BFF: 200 OK
+    BFF-->>MFE: 200 OK (Status Em Limpeza)
+
+    %% 4. Conclusão da Limpeza e Liberação
+    Housekeeper->>MFE: Vistoria concluída -> clica "Liberar Quarto"
+    MFE->>BFF: PATCH /api/v1/housekeeping/rooms/R201/status { status: 'available' }
+    BFF->>APIM: PATCH /api/v1/housekeeping/rooms/R201/status
+    APIM->>Hotel: PATCH /rooms/R201/cleaning-status
+    activate Hotel
+    Hotel->>Mongo: updateOne({ id: 'R201' }, { $set: { status: 'available' } })
+    Hotel->>Bus: Publish RoomCleaningCompleted (roomId: 'R201', hotelId: 'H01')
+    Hotel-->>APIM: 200 OK { roomId: 'R201', status: 'available' }
+    deactivate Hotel
+    APIM-->>BFF: 200 OK
+    BFF-->>MFE: 200 OK (Quarto Pronto para Nova Hospedagem)
+    MFE-->>Receptionist: Painel da Recepção atualiza Quarto 201 para Verde (Disponível)

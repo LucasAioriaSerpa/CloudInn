@@ -1,0 +1,10 @@
+services:
+  bff:
+    build: ./bff
+    ports: ['4000:4000']
+  hotel-service:
+    build: ./hotel-service
+    ports: ['5001:5001']
+  reservations-service:
+    build: ./reservations-service
+    ports: ['5002:5002']

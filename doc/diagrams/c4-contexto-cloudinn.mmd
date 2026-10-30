@@ -1,0 +1,20 @@
+C4Context
+    title Diagrama de Contexto (Nível 1) - CloudInn PMS
+
+    Person(hospede, "Hóspede", "Cliente que adquire hospedagem via canais online e se apresenta na recepção do hotel.")
+    Person(recepcionista, "Recepcionista / Staff", "Profissional do balcão que gerencia check-in, check-out, reservas e consultas operacionais.")
+    Person(governanca, "Equipe de Governança", "Profissionais de camaria e supervisores que atualizam e acompanham o ciclo de higienização dos aposentos.")
+    Person(gerente, "Gerente / Administrador", "Gestor responsável por relatórios operacionais, auditoria de staff, diárias e acompanhamento de receita.")
+
+    System_Ext(ota, "Canais Parceiros / OTAs", "Plataformas externas de reservas (Booking.com, Airbnb, Expedia) que notificam hospedagens.")
+
+    System(cloudinn, "CloudInn PMS", "Sistema corporativo de gestão hoteleira distribuído com API Gateway, BFF, microsserviços segregados, mensageria e serverless.")
+
+    Rel(hospede, ota, "Pesquisa e adquire hospedagem online")
+    Rel(hospede, recepcionista, "Apresenta documento no balcão e retira chaves")
+    Rel(recepcionista, cloudinn, "Opera check-in, check-out e grade de ocupação", "HTTPS / Web SPA")
+    Rel(governanca, cloudinn, "Consulta quartos sujos e atualiza status de higienização", "HTTPS / Web SPA")
+    Rel(gerente, cloudinn, "Consulta relatórios analíticos, ocupação e colaboradores", "HTTPS / Web SPA")
+    Rel(ota, cloudinn, "Envia webhooks e notificações de reserva com chave de API", "HTTPS / REST JSON")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

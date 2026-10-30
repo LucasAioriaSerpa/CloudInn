@@ -1,0 +1,28 @@
+C4Component
+    title Diagrama de Componentes (Nível 3) - Backend for Frontend (BFF)
+
+    Container_Boundary(bff_boundary, "Backend for Frontend (NestJS / Node.js)") {
+        Component(auth_guard, "Auth & RBAC Guard", "NestJS Guard", "Valida JWT de sessão e restringe endpoints por perfil (manager, receptionist, housekeeper).")
+        Component(agg_controller, "AggregatedDataController", "NestJS Controller", "Expõe GET /api/v1/aggregated-data e rotas proxy de conveniência para a UI.")
+        Component(agg_handler, "GetAggregatedDataHandler", "Application Handler", "Orquestra a consulta paralela entre os serviços e compõe o DTO agregado.")
+        Component(resilience, "Resilience & CircuitBreaker", "NestJS Interceptor", "Gerencia timeouts de 1.5s, retries controlados e fallback para resposta parcial.")
+        Component(dto_assembler, "AggregatedDtoAssembler", "Domain / DTO Mapper", "Transforma e normaliza as respostas de Hotel, Reservas e Functions em um único contrato.")
+        Component(gateway_client, "GatewayHttpClient", "Infrastructure / Axios", "Cliente HTTP com pool de conexões e injeção de correlationId para o API Gateway.")
+        Component(cache_service, "MemoryCacheService", "Infrastructure / Cache-Manager", "Cache em memória de curta duração (TTL 10s) para catálogo estático de quartos e tarifas.")
+    }
+
+    Container(mfe, "Microfrontend React SPA", "React / Vite", "Interface web do usuário.")
+    Container(gateway, "API Gateway Interno", "Azure API Management", "Ponto central de roteamento para serviços e functions.")
+
+    Rel(mfe, auth_guard, "Requisita GET /api/v1/aggregated-data", "HTTPS / Bearer JWT")
+    Rel(auth_guard, agg_controller, "Autoriza requisição")
+    Rel(agg_controller, agg_handler, "Invoca execução da query")
+    Rel(agg_handler, resilience, "Aplica proteção de circuit breaker e timeout")
+    Rel(resilience, gateway_client, "Executa chamadas paralelas via Gateway")
+    Rel(agg_handler, cache_service, "Consulta/armazena catálogo em cache")
+    Rel(gateway_client, gateway, "Dispara GET /api/v1/hotel, GET /api/v1/reservations, POST /api/v1/analytics/calculate", "HTTPS / mTLS")
+    Rel(gateway_client, dto_assembler, "Retorna dados crus dos serviços")
+    Rel(dto_assembler, agg_controller, "Entrega JSON consolidado com metadados")
+    Rel(agg_controller, mfe, "Retorna resposta HTTP 200 (ou 200 com partial: true)", "JSON")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

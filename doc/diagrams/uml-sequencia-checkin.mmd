@@ -1,0 +1,46 @@
+sequenceDiagram
+    autonumber
+    title Sequência UML - Fluxo de Check-in e Sincronização Interserviços
+
+    actor Receptionist as Recepcionista
+    participant MFE as Microfrontend React
+    participant BFF as BFF NestJS
+    participant APIM as API Gateway (APIM)
+    participant Res as Reservas Service (SQL)
+    participant SQL as Azure SQL Database
+    participant Worker as Outbox Worker
+    participant Bus as Azure Service Bus
+    participant Hotel as Hotel Service (Mongo)
+    participant Mongo as MongoDB Atlas
+
+    Receptionist->>MFE: Clica em "Realizar Check-in" (Reserva #RES-501)
+    MFE->>BFF: POST /api/v1/reservations/RES-501/checkin
+    activate BFF
+
+    BFF->>APIM: POST /api/v1/reservations/RES-501/checkin
+    APIM->>Res: POST /internal/reservations/RES-501/checkin
+    activate Res
+
+    Res->>SQL: BEGIN TRANSACTION
+    Res->>SQL: SELECT Status, RoomId, CheckInDate FROM Reservations WHERE Id = 'RES-501'
+    Note over Res: Valida se reserva está CONFIRMED e se data de check-in é válida hoje
+    Res->>SQL: UPDATE Reservations SET Status = 'ACTIVE', ActualCheckInAt = GETUTCDATE() WHERE Id = 'RES-501'
+    Res->>SQL: INSERT INTO Outbox (EventType = 'CheckInCompleted', AggregateId = 'RES-501', Payload = { roomId: 'R201', guestId: 'G10' })
+    Res->>SQL: COMMIT TRANSACTION
+    Res-->>APIM: 200 OK { id: "RES-501", status: "ACTIVE", roomId: "R201" }
+    deactivate Res
+    APIM-->>BFF: 200 OK
+    BFF-->>MFE: 200 OK { message: "Check-in realizado com sucesso", status: "ACTIVE" }
+    deactivate BFF
+    MFE-->>Receptionist: Exibe Toast de confirmação e atualiza quarto localmente para "Ocupado"
+
+    %% Propagação Assíncrona via EDA
+    Worker->>SQL: SELECT * FROM Outbox WHERE Status = 'PENDING'
+    Worker->>Bus: Publish Topic "reservation-events" (CheckInCompleted)
+    Worker->>SQL: UPDATE Outbox SET Status = 'PUBLISHED' WHERE Id = ...
+
+    Bus->>Hotel: Consume Subscription "hotel-room-status-sync"
+    activate Hotel
+    Hotel->>Mongo: updateOne({ id: 'R201' }, { $set: { status: 'occupied', currentReservationId: 'RES-501' } })
+    Note over Hotel,Mongo: Status físico do quarto atualizado para "occupied" no MongoDB Atlas
+    deactivate Hotel

@@ -1,0 +1,33 @@
+C4Component
+    title Diagrama de Componentes (Nível 3) - API Gateway Interno (Azure API Management)
+
+    Container(bff, "Backend for Frontend", "NestJS", "Origem das requisições internas do painel.")
+    System_Ext(ota, "Sistemas Parceiros / OTAs", "Plataformas externas de reservas.")
+
+    Container_Boundary(apim_boundary, "Azure API Management (API Gateway)") {
+        Component(inbound_policy, "Inbound Security Policy", "APIM Policy XML", "Valida certificados mTLS do BFF, chave de API das OTAs e bloqueia tráfego anônimo.")
+        Component(rate_limiter, "Rate Limiting & Quotas", "APIM Policy XML", "Controla vazão de requisições por IP/origem prevenindo sobrecarga nos microsserviços.")
+        Component(telemetry_logger, "Telemetry & TraceContext", "APIM Diagnostic Logger", "Propaga W3C traceparent, injeta correlationId e transmite métricas para Application Insights.")
+        Component(router_hotel, "Hotel Routing Engine", "APIM Backend Route", "Roteia /api/v1/hotel/* para o cluster interno do Hotel Service.")
+        Component(router_reservas, "Reservas Routing Engine", "APIM Backend Route", "Roteia /api/v1/reservations/* e /api/v1/guests/* para o Reservas/Guests Service.")
+        Component(router_functions, "Serverless Routing Engine", "APIM Backend Route", "Roteia /api/v1/analytics/* com chaves de função gerenciadas para a Azure Function.")
+    }
+
+    Container(hotel_service, "Hotel Service", "NestJS", "Serviço de hotéis e quartos.")
+    Container(reservas_service, "Reservas/Guests Service", "NestJS", "Serviço de reservas e hóspedes.")
+    Container(functions, "Azure Function Analítica", "Serverless v4", "Função HTTP de cálculos pesados.")
+
+    Rel(bff, inbound_policy, "Chamadas de agregação e CRUD", "HTTPS / mTLS")
+    Rel(ota, inbound_policy, "Webhooks de novas reservas", "HTTPS / api_key")
+    Rel(inbound_policy, rate_limiter, "Aplica limites de vazão")
+    Rel(rate_limiter, telemetry_logger, "Gera traces e correlação")
+
+    Rel(telemetry_logger, router_hotel, "Encaminha rota de hotel")
+    Rel(telemetry_logger, router_reservas, "Encaminha rota de reservas")
+    Rel(telemetry_logger, router_functions, "Encaminha rota analítica")
+
+    Rel(router_hotel, hotel_service, "Repassa requisição", "HTTP Privado / VNet")
+    Rel(router_reservas, reservas_service, "Repassa requisição", "HTTP Privado / VNet")
+    Rel(router_functions, functions, "Invoca trigger HTTP", "HTTPS / Function Key Privada")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

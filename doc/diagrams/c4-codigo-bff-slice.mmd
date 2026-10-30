@@ -1,0 +1,61 @@
+---
+title: C4 Nivel 4 (Codigo) - Vertical Slice GetAggregatedData (BFF)
+---
+classDiagram
+    class AggregatedDataController {
+        +getAggregatedData(hotelId: string, query: AggregatedQueryDto): Promise~AggregatedResponseDto~
+    }
+
+    class GetAggregatedDataQuery {
+        +hotelId: string
+        +date: string
+        +includeCalculations: boolean
+    }
+
+    class GetAggregatedDataHandler {
+        -gatewayClient: IGatewayClient
+        -cacheManager: ICacheManager
+        -dtoAssembler: IAggregatedDtoAssembler
+        +handle(query: GetAggregatedDataQuery): Promise~AggregatedResponseDto~
+    }
+
+    class IGatewayClient {
+        <<interface>>
+        +fetchHotelDetails(hotelId: string): Promise~HotelDataDto~
+        +fetchReservations(hotelId: string, date: string): Promise~ReservationListDto~
+        +invokeAnalyticsFunction(payload: AnalyticsPayloadDto): Promise~CalculationResultsDto~
+    }
+
+    class IAggregatedDtoAssembler {
+        <<interface>>
+        +assemble(hotel: HotelDataDto, res: ReservationListDto, calc: CalculationResultsDto, errors: string[]): AggregatedResponseDto
+    }
+
+    class AggregatedResponseDto {
+        +hotel: HotelPayload
+        +guests: GuestItem[]
+        +reservations: ReservationItem[]
+        +calculations: CalculationPayload
+        +metadata: MetadataPayload
+        +errors: ErrorItem[]
+    }
+
+    class HttpGatewayClientAdapter {
+        -axiosInstance: AxiosInstance
+        -circuitBreaker: CircuitBreaker
+        +fetchHotelDetails(hotelId: string): Promise~HotelDataDto~
+        +fetchReservations(hotelId: string, date: string): Promise~ReservationListDto~
+        +invokeAnalyticsFunction(payload: AnalyticsPayloadDto): Promise~CalculationResultsDto~
+    }
+
+    class AggregatedDtoAssemblerImpl {
+        +assemble(hotel: HotelDataDto, res: ReservationListDto, calc: CalculationResultsDto, errors: string[]): AggregatedResponseDto
+    }
+
+    AggregatedDataController --> GetAggregatedDataQuery : constrói
+    AggregatedDataController --> GetAggregatedDataHandler : invoca
+    GetAggregatedDataHandler --> IGatewayClient : dispara chamadas concorrentes
+    GetAggregatedDataHandler --> IAggregatedDtoAssembler : compõe resposta final
+    IGatewayClient <|.. HttpGatewayClientAdapter : implementa
+    IAggregatedDtoAssembler <|.. AggregatedDtoAssemblerImpl : implementa
+    AggregatedDtoAssemblerImpl --> AggregatedResponseDto : produz

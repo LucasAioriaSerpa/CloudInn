@@ -1,0 +1,75 @@
+flowchart TB
+    %% Diagrama UML de Componentes - Arquitetura Distribuída CloudInn
+
+    subgraph ClientLayer ["Camada de Apresentação (Client Side)"]
+        MFE["«component»\nMicrofrontend React SPA\n[Port: 3000 / HTTPS]"]
+    end
+
+    subgraph OrchestrationLayer ["Camada de Orquestração (BFF)"]
+        BFF["«component»\nBFF NestJS\n[Port: 4000]"]
+        AggModule["«subcomponent»\nAggregatedModule"]
+        ProxyModule["«subcomponent»\nGatewayProxyModule"]
+        BFF --- AggModule
+        BFF --- ProxyModule
+    end
+
+    subgraph GatewayLayer ["Camada de Borda & Roteamento Interno"]
+        APIM["«component»\nAzure API Management (Gateway)\n[TLS 1.3 / mTLS / Policies]"]
+        PolicySec["«interface»\nAuth & Throttling Policy"]
+        RouteEngine["«subcomponent»\nDynamic Route Dispatcher"]
+        APIM --- PolicySec
+        APIM --- RouteEngine
+    end
+
+    subgraph DomainServicesLayer ["Camada de Microsserviços de Domínio"]
+        subgraph HotelServiceComp ["«component» Hotel Service (NestJS)"]
+            HCtrl["[REST Port: 5001]"]
+            HApp["Application Slices\n(Rooms, Staff, Rates)"]
+            HInfra["MongoDB Driver / Mongoose"]
+            HCtrl --> HApp --> HInfra
+        end
+
+        subgraph ReservasServiceComp ["«component» Reservas/Guests Service (NestJS)"]
+            RCtrl["[REST Port: 5002]"]
+            RApp["Application Slices\n(Reservations, Guests, CheckIn)"]
+            RInfra["TypeORM / TDS Client"]
+            RCtrl --> RApp --> RInfra
+        end
+
+        subgraph FunctionComp ["«component» Azure Function (Serverless v4)"]
+            FHttp["[HTTP Trigger / Key]"]
+            FEngine["Analytics Calculation Engine"]
+            FHttp --> FEngine
+        end
+    end
+
+    subgraph PersistenceLayer ["Camada de Persistência Segregada"]
+        MongoAtlas[("«database»\nMongoDB Atlas\n(hotels, rooms, staff, rates)")]
+        AzureSql[("«database»\nAzure SQL Database\n(Guests, Reservations, Outbox)")]
+    end
+
+    subgraph MessagingLayer ["Camada de Mensageria & Integração Assíncrona"]
+        ServiceBus{{"«message broker»\nAzure Service Bus Topics\n(Domain & Integration Events)"}}
+    end
+
+    subgraph ExternalEcosystem ["Ecossistema Externo"]
+        OTA["«system»\nCanais Parceiros / OTAs\n(Booking, Airbnb)"]
+    end
+
+    %% Relações e Fluxos
+    MFE -->|"HTTPS / REST JSON"| BFF
+    BFF -->|"HTTPS / mTLS (Rotas /api/v1/*)"| APIM
+
+    OTA -->|"HTTPS / Webhook (API Key)"| APIM
+
+    APIM -->|"HTTP Privado"| HCtrl
+    APIM -->|"HTTP Privado"| RCtrl
+    APIM -->|"HTTPS / Function Key"| FHttp
+
+    HInfra -->|"TLS / BSON"| MongoAtlas
+    RInfra -->|"TLS / TDS (ACID)"| AzureSql
+
+    ReservasServiceComp -.->|"AMQP 1.0 (Outbox Worker)"| ServiceBus
+    ServiceBus -.->|"AMQP 1.0 (Event Consumer)"| HotelServiceComp
+    HotelServiceComp -.->|"AMQP 1.0 (Event Publisher)"| ServiceBus
+    ServiceBus -.->|"AMQP 1.0 (Event Consumer)"| ReservasServiceComp

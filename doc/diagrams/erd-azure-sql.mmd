@@ -1,0 +1,64 @@
+erDiagram
+    %% Diagrama Entidade-Relacionamento (ERD) - Azure SQL Database (Reservas/Guests Service)
+
+    GUESTS {
+        uniqueidentifier Id PK "Chave Primária (GUID)"
+        nvarchar(150) Name "Nome completo do hóspede"
+        varchar(30) Document "CPF ou Passaporte (Índice Único)"
+        varchar(120) Email "E-mail de contato"
+        varchar(25) Phone "Telefone celular"
+        bit VipStatus "Flag de hóspede VIP"
+        datetime2 CreatedAt "Data de cadastro"
+        datetime2 UpdatedAt "Data de atualização"
+    }
+
+    RESERVATIONS {
+        uniqueidentifier Id PK "Chave Primária (GUID)"
+        varchar(20) Code "Código amigável da reserva (Índice Único)"
+        uniqueidentifier GuestId FK "Chave Estrangeira -> GUESTS(Id)"
+        varchar(50) HotelIdRef "Referência lógica remota ao Hotel (MongoDB)"
+        varchar(50) RoomIdRef "Referência lógica remota ao Quarto (MongoDB)"
+        date CheckInDate "Data estipulada de entrada"
+        date CheckOutDate "Data estipulada de saída"
+        varchar(20) Status "Estado: PENDING, CONFIRMED, ACTIVE, COMPLETED, CANCELLED"
+        decimal(10_2) TotalAmount "Valor total da hospedagem"
+        varchar(50) OriginChannel "Origem: DIRECT, BOOKING, AIRBNB, EXPEDIA"
+        datetime2 ActualCheckInAt "Registro real de check-in"
+        datetime2 ActualCheckOutAt "Registro real de check-out"
+        datetime2 CreatedAt "Data de criação"
+        datetime2 UpdatedAt "Data de atualização"
+    }
+
+    IDEMPOTENCY_KEYS {
+        uniqueidentifier Id PK "Chave Primária"
+        varchar(100) Key "Chave única da requisição (Índice Único)"
+        varchar(50) Consumer "Identificador do cliente/OTA"
+        int StatusCode "Status HTTP gerado originalmente"
+        nvarchar(MAX) ResponseBody "Payload JSON de retorno cacheado"
+        datetime2 CreatedAt "Data de recebimento"
+        datetime2 ExpiresAt "Data de expiração do TTL"
+    }
+
+    OUTBOX_MESSAGES {
+        uniqueidentifier Id PK "Chave Primária"
+        varchar(80) EventType "Nome do evento (ex: ReservationCreated)"
+        varchar(50) AggregateId "ID do agregado de origem"
+        nvarchar(MAX) Payload "Payload do evento em formato JSON"
+        varchar(20) Status "Estado: PENDING, PUBLISHED, FAILED"
+        int RetryCount "Contador de tentativas de despacho"
+        datetime2 CreatedAt "Data de geração do evento"
+        datetime2 ProcessedAt "Data de envio ao barramento"
+    }
+
+    RESERVATION_AUDITS {
+        uniqueidentifier Id PK "Chave Primária"
+        uniqueidentifier ReservationId FK "Chave Estrangeira -> RESERVATIONS(Id)"
+        varchar(20) PreviousStatus "Status anterior"
+        varchar(20) NewStatus "Novo status transitado"
+        varchar(80) ChangedBy "Identificador do operador ou sistema"
+        nvarchar(255) Reason "Motivo da alteração de estado"
+        datetime2 ChangedAt "Data e hora da alteração"
+    }
+
+    GUESTS ||--o{ RESERVATIONS : "possui (1:N)"
+    RESERVATIONS ||--o{ RESERVATION_AUDITS : "registra histórico (1:N)"

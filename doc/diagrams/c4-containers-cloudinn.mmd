@@ -1,0 +1,40 @@
+C4Container
+    title Diagrama de Containers (Nível 2) - CloudInn PMS
+
+    Person(usuario, "Usuários Operacionais", "Recepcionistas, governança e gerentes operando o sistema hoteleiro.")
+    System_Ext(ota, "Sistemas Parceiros / OTAs", "Plataformas externas de reservas e canais de distribuição (Booking, Airbnb).")
+
+    Container_Boundary(cloudinn_boundary, "Plataforma CloudInn PMS") {
+        Container(mfe, "Microfrontend Web App", "React 19 / Vite / Tailwind", "Interface SPA responsiva única para recepção, governança e gerência.")
+        Container(bff, "Backend for Frontend (BFF)", "Node.js / NestJS", "Camada de orquestração de UI, composição de DTOs, cache e agregação de dados.")
+        Container(gateway, "API Gateway Interno / Core", "Azure API Management", "Ponto central de roteamento interno, políticas de segurança, rate limit, mTLS e telemetria.")
+        Container(hotel_service, "Hotel Service", "Node.js / NestJS", "Microsserviço proprietário do domínio de Hotéis, Staff, Quartos, Diárias e Governança.")
+        Container(reservas_service, "Reservas/Guests Service", "Node.js / NestJS", "Microsserviço proprietário do domínio de Hóspedes, Reservas, Conflitos de Período e Idempotência.")
+        Container(functions, "Azure Function Analítica", "Azure Functions v4 / Serverless", "Função HTTP sob demanda para cálculos analíticos pesados (taxa de ocupação e receita projetada).")
+
+        ContainerDb(mongo_db, "Hotel Database", "MongoDB Atlas (NoSQL)", "Armazenamento documental de hotéis, colaboradores (staff), quartos, diárias e tarefas de limpeza.")
+        ContainerDb(sql_db, "Reservas & Guests Database", "Azure SQL Database (PaaS)", "Banco relacional com transações ACID para hóspedes, reservas, chaves de idempotência e outbox.")
+
+        Container(service_bus, "Barramento de Mensageria", "Azure Service Bus (Topics)", "Broker assíncrono para eventos de domínio e integração com entrega pelo menos uma vez e DLQ.")
+    }
+
+    Rel(usuario, mfe, "Acessa e opera", "HTTPS / TLS 1.3")
+    Rel(mfe, bff, "Requisita dados e despacha comandos", "HTTPS / JSON (GET /aggregated-data, etc.)")
+    Rel(bff, gateway, "Encaminha chamadas orquestradas", "HTTPS / mTLS (Rotas /api/v1/*)")
+
+    Rel(gateway, hotel_service, "Roteia consultas e comandos de hotel/quartos", "HTTPS / REST")
+    Rel(gateway, reservas_service, "Roteia consultas e comandos de hóspedes/reservas", "HTTPS / REST")
+    Rel(gateway, functions, "Dispara cálculos analíticos sob demanda", "HTTPS / REST")
+
+    Rel(ota, gateway, "Envia webhooks autenticados de reserva", "HTTPS / API Key (Rota pública /api/v1/ota/reservations)")
+    Rel(gateway, reservas_service, "Encaminha webhook da OTA para ingestão", "HTTPS / REST")
+
+    Rel(hotel_service, mongo_db, "Lê e grava dados de hotel, quartos e staff", "MongoDB Native Protocol / TLS")
+    Rel(reservas_service, sql_db, "Executa transações ACID e consultas relacionais", "TDS / Encrypted TLS")
+
+    Rel(reservas_service, service_bus, "Publica eventos (ReservationCreated, CheckInCompleted)", "AMQP 1.0 / TLS")
+    Rel(service_bus, hotel_service, "Notifica eventos de reserva para atualização de estados", "AMQP 1.0 / TLS")
+    Rel(hotel_service, service_bus, "Publica eventos de governança (RoomCleaningCompleted)", "AMQP 1.0 / TLS")
+    Rel(service_bus, reservas_service, "Notifica liberação de quarto para sincronização", "AMQP 1.0 / TLS")
+
+    UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")

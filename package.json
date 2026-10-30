@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "npm run dev --workspace=frontend",
     "build": "npm run build --workspace=frontend",
-    "lint": "node -e \"console.log('Lint check completed')\""
+    "lint": "node -e \"console.log('Lint check completed')\"",
+    "test:backend": "node --test --test-reporter spec backend/test/*.test.js backend/*/test/*.test.js"
   },
   "overrides": {
     "qs": "^6.16.0"
@@ -20,5 +21,8 @@
   },
   "dependencies": {
     "docx": "^9.8.1"
+  },
+  "devDependencies": {
+    "pdfkit": "^0.20.2"
   }
 }

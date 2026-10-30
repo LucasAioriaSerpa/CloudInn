@@ -1,0 +1,68 @@
+erDiagram
+    %% Modelo Documental e Relações Lógicas - MongoDB Atlas (Hotel Service)
+    %% Nota: No MongoDB, as relações são lógicas (referências por ID BSON) sem FKs físicas forçadas pelo motor.
+
+    HOTELS {
+        string _id PK "Identificador único BSON"
+        string code "Sigla corporativa (ex: H01 - Índice Único)"
+        string name "Razão social / Nome fantasia"
+        string cnpj "Documento empresarial fiscal"
+        object address "Logradouro, número, cidade, UF, CEP"
+        string phone "Telefone da recepção"
+        string email "E-mail de contato corporativo"
+        object checkInOutPolicies "Horários padrão (Check-in 14h, Check-out 12h)"
+        date createdAt "Timestamp de criação"
+    }
+
+    ROOMS {
+        string _id PK "Identificador único BSON"
+        string hotelId FK "Referência lógica -> HOTELS._id"
+        string number "Número da porta (Índice Composto Único com hotelId)"
+        string roomType "Tipologia: STD, DLX, SUI, PRE"
+        int floor "Andar do aposento"
+        string status "Estado: available, reserved, occupied, dirty, cleaning"
+        string currentReservationId "ID lógico da reserva ativa (se ocupado)"
+        array amenities "Itens: ['ar-condicionado', 'frigobar', 'wifi', 'tv-cabo']"
+        date updatedAt "Última transição de estado"
+    }
+
+    STAFF {
+        string _id PK "Identificador único BSON"
+        string hotelId FK "Referência lógica -> HOTELS._id"
+        string name "Nome completo do colaborador"
+        string username "Login de acesso (Índice Único)"
+        string email "E-mail institucional"
+        string role "Perfil RBAC: manager, sub_manager, receptionist, housekeeper"
+        string document "CPF do funcionário"
+        string shift "Turno de trabalho"
+        string status "Situação: active, inactive"
+        date createdAt "Data de admissão/cadastro"
+    }
+
+    DAILY_RATES {
+        string _id PK "Identificador único BSON"
+        string hotelId FK "Referência lógica -> HOTELS._id"
+        string roomType "Tipologia do quarto: STD, DLX, SUI, PRE"
+        decimal pricePerNight "Valor da diária em BRL"
+        string currency "Moeda: BRL"
+        date effectiveFrom "Início da vigência da tarifa"
+        date effectiveTo "Fim da vigência da tarifa"
+    }
+
+    CLEANING_TASKS {
+        string _id PK "Identificador único BSON"
+        string hotelId FK "Referência lógica -> HOTELS._id"
+        string roomId FK "Referência lógica -> ROOMS._id"
+        string assignedStaffId FK "Referência lógica -> STAFF._id"
+        string status "Situação: pending, in_progress, completed, inspected"
+        string priority "Prioridade: normal, urgent (hóspede aguardando)"
+        date requestedAt "Data de solicitação (check-out)"
+        date completedAt "Data de finalização da higienização"
+        string notes "Observações da camaria"
+    }
+
+    HOTELS ||--o{ ROOMS : "contém (1:N)"
+    HOTELS ||--o{ STAFF : "emprega (1:N)"
+    HOTELS ||--o{ DAILY_RATES : "precifica (1:N)"
+    ROOMS ||--o{ CLEANING_TASKS : "demanda higienização (1:N)"
+    STAFF ||--o{ CLEANING_TASKS : "executa tarefa (1:N)"
