@@ -1,0 +1,8 @@
+{
+  "name": "cloudinn-analytics-function",
+  "version": "3.0.0",
+  "private": true,
+  "main": "src/functions/*.js",
+  "scripts": { "test": "node --test --test-reporter spec", "start": "func start" },
+  "dependencies": { "@azure/functions": "^4.0.0" }
+}
