@@ -1,0 +1,80 @@
+name: Backend CI/CD (Docker Hub + OpenShift)
+
+on:
+  push:
+    branches: [main]
+    paths: ['backend/**']
+  workflow_dispatch: {}
+
+env:
+  DOCKERHUB_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            bff: ['backend/bff/**']
+            hotel-service: ['backend/hotel-service/**']
+            reservations-service: ['backend/reservations-service/**']
+
+  build-and-deploy:
+    needs: changes
+    if: ${{ needs.changes.outputs.services != '[]' && needs.changes.outputs.services != '' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Testes do serviço
+        run: node --test backend/${{ matrix.service }}/test
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: backend/${{ matrix.service }}
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloudinn-${{ matrix.service }}:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/cloudinn-${{ matrix.service }}:latest
+
+      - name: Instalar oc
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: "4"
+
+      - name: Login no OpenShift
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
+          openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
+          namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
+
+      - name: Atualizar o Deployment
+        run: |
+          oc set image deployment/${{ matrix.service }} \
+            ${{ matrix.service }}=docker.io/${{ secrets.DOCKERHUB_USERNAME }}/cloudinn-${{ matrix.service }}:${{ github.sha }}
+          # o Sandbox hiberna Deployments (escala a zero): garante 1 réplica
+          oc scale deployment/${{ matrix.service }} --replicas=1
+          oc rollout status deployment/${{ matrix.service }} --timeout=180s
