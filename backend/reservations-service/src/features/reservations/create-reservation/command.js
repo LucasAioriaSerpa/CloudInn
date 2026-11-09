@@ -1,7 +1,29 @@
 class CreateReservationCommand {
-  constructor({ id, guestId, hotelId, roomId, checkInDate, checkOutDate, idempotencyKey }) {
-    Object.assign(this, { id, guestId, hotelId, roomId, checkInDate, checkOutDate, idempotencyKey });
+  constructor({
+    guestId,
+    hotelId,
+    roomId,
+    checkInDate,
+    checkOutDate,
+    totalAmount,
+    originChannel,
+    idempotencyKey,
+    consumer
+  }) {
+    Object.assign(this, {
+      guestId,
+      hotelId,
+      roomId,
+      checkInDate,
+      checkOutDate,
+      totalAmount,
+      originChannel,
+      idempotencyKey,
+      consumer
+    });
   }
 }
 
-module.exports = { CreateReservationCommand };
+module.exports = {
+  CreateReservationCommand
+};
