@@ -1,7 +1,7 @@
 # Deploy da Azure Function analítica (fc-cloudInn-analytics).
 # Gerado pelo Azure e ajustado: o projeto fica em backend/api/functions/analytics-function (não na raiz do repo).
 
-name: Build and deploy Node.js project to Azure Function App - fc-cloudInn-analytics
+name: function fc-cloudInn-analytics CI/CD
 
 on:
   push:
