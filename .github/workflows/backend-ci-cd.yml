@@ -40,7 +40,8 @@ jobs:
           node-version: 22
 
       - name: Testes do serviço
-        run: node --test backend/${{ matrix.service }}/test
+        working-directory: backend/${{ matrix.service }}
+        run: npm test --if-present
 
       - uses: docker/setup-buildx-action@v3
 
