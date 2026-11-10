@@ -77,9 +77,9 @@ jobs:
       - name: Configurar variáveis do serviço
         if: matrix.service == 'reservations-service'
         env:
-          DB_SERVER: ${{ vars.DB_SERVER }}
-          DB_DATABASE: ${{ vars.DB_DATABASE }}
-          DB_PORT: ${{ vars.DB_PORT }}
+          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_PORT: ${{ secrets.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
