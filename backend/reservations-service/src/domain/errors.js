@@ -1,32 +1,29 @@
+// Erros de domínio: descrevem o problema de negócio sem conhecer HTTP.
+// A camada de API traduz cada tipo para o status adequado.
 class DomainError extends Error {
   constructor(message, code) {
     super(message);
-    this.name = this.constructor.name;
+    this.name = new.target.name;
     this.code = code;
   }
 }
 
-class MissingIdempotencyKeyError extends DomainError {
-  constructor(message = 'Idempotency-Key é obrigatória.') {
-    super(message, 'MISSING_IDEMPOTENCY_KEY');
+class ValidationError extends DomainError {
+  constructor(message) {
+    super(message, 'VALIDATION_ERROR');
   }
 }
 
-class InvalidTotalAmountError extends DomainError {
-  constructor(message = 'Valor total inválido.') {
-    super(message, 'INVALID_TOTAL_AMOUNT');
+class ConflictError extends DomainError {
+  constructor(message) {
+    super(message, 'CONFLICT');
   }
 }
 
-class RoomUnavailableError extends DomainError {
-  constructor(message = 'Quarto indisponível') {
-    super(message, 'ROOM_UNAVAILABLE');
+class NotFoundError extends DomainError {
+  constructor(message) {
+    super(message, 'NOT_FOUND');
   }
 }
 
-module.exports = {
-  DomainError,
-  MissingIdempotencyKeyError,
-  InvalidTotalAmountError,
-  RoomUnavailableError
-};
+module.exports = { DomainError, ValidationError, ConflictError, NotFoundError };

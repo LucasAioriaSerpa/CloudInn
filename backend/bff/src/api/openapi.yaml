@@ -1,0 +1,268 @@
+openapi: 3.0.3
+info:
+  title: CloudInn BFF
+  version: 1.0.0
+  description: |
+    Backend for Frontend do CloudInn. É o único backend chamado pelo frontend.
+
+    - **Agregação:** `GET /aggregated-data` consulta Hotel Service, Reservas Service e a Azure Function
+      e devolve um único JSON. Falha de uma fonte gera resposta parcial (`metadata.partial = true`).
+    - **CRUD:** quartos, funcionários e catálogo são repassados ao Hotel Service; reservas e hóspedes,
+      ao Reservas Service. Status e corpo das respostas são preservados. Os contratos completos estão
+      no `/docs` de cada microservice.
+    - **Segurança:** todas as rotas de negócio exigem `Authorization: Bearer <token>` obtido em `POST /auth/login`.
+    - Erros seguem o formato `{ "error": { "code", "message", "correlationId" } }`.
+servers:
+  - url: /
+tags:
+  - name: auth
+  - name: aggregation
+  - name: hotel
+    description: Repassado ao Hotel Service
+  - name: reservations
+    description: Repassado ao Reservas Service
+  - name: health
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness do BFF
+      security: []
+      responses:
+        "200": { description: Processo ativo }
+  /health/dependencies:
+    get:
+      tags: [health]
+      summary: Situação de Hotel Service, Reservas Service e Azure Function
+      security: []
+      responses:
+        "200":
+          description: Todas as dependências respondem
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DependenciesStatus" }
+        "503":
+          description: Ao menos uma dependência fora
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DependenciesStatus" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Login de funcionário
+      description: Valida as credenciais no Hotel Service e devolve um JWT (HS256).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string, description: username ou e-mail }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Login realizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LoginResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Dados do usuário do token
+      responses:
+        "200": { description: Usuário autenticado }
+        "401": { $ref: "#/components/responses/Error" }
+
+  /aggregated-data:
+    get:
+      tags: [aggregation]
+      summary: Hotel, quartos, reservas, hóspedes e cálculos em um único JSON
+      description: |
+        Hotel e Reservas são consultados em paralelo, com timeout por chamada. Com esses dados, o BFF calcula
+        a entrada da Function (quartos totais, quartos ocupados no dia e receita do dia) e a chama.
+        Se alguma fonte falhar, responde 200 com `metadata.partial = true` e o motivo em `metadata.errors`.
+        Responde 503 apenas se nenhuma fonte responder.
+      parameters:
+        - { name: hotelId, in: query, required: true, schema: { type: string } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date, example: "2026-11-10" } }
+        - { name: includeCalculations, in: query, required: false, schema: { type: boolean, default: true } }
+      responses:
+        "200":
+          description: Dados agregados (completos ou parciais)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AggregatedData" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+
+  /rooms:
+    get: { tags: [hotel], summary: Lista quartos, responses: { "200": { description: Repassado ao Hotel Service } } }
+    post: { tags: [hotel], summary: Cadastra quarto, responses: { "201": { description: Repassado ao Hotel Service } } }
+  /rooms/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get: { tags: [hotel], summary: Busca quarto, responses: { "200": { description: Repassado ao Hotel Service } } }
+    put: { tags: [hotel], summary: Atualiza quarto, responses: { "200": { description: Repassado ao Hotel Service } } }
+    delete: { tags: [hotel], summary: Exclui quarto, responses: { "204": { description: Repassado ao Hotel Service } } }
+  /rooms/{id}/status:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch: { tags: [hotel], summary: Altera status do quarto, responses: { "200": { description: Repassado ao Hotel Service } } }
+  /staff:
+    get: { tags: [hotel], summary: Lista funcionários, responses: { "200": { description: Repassado ao Hotel Service } } }
+    post:
+      tags: [hotel]
+      summary: Cadastra funcionário (somente manager e sub_manager)
+      responses:
+        "201": { description: Repassado ao Hotel Service }
+        "403": { $ref: "#/components/responses/Error" }
+  /staff/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get: { tags: [hotel], summary: Busca funcionário, responses: { "200": { description: Repassado ao Hotel Service } } }
+    put:
+      tags: [hotel]
+      summary: Atualiza funcionário (somente manager e sub_manager)
+      responses:
+        "200": { description: Repassado ao Hotel Service }
+        "403": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [hotel]
+      summary: Exclui funcionário (somente manager e sub_manager)
+      responses:
+        "204": { description: Repassado ao Hotel Service }
+        "403": { $ref: "#/components/responses/Error" }
+  /hotels/{id}/catalog:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get: { tags: [hotel], summary: Catálogo do hotel, responses: { "200": { description: Repassado ao Hotel Service } } }
+
+  /reservations:
+    get: { tags: [reservations], summary: Lista reservas, responses: { "200": { description: Repassado ao Reservas Service } } }
+    post:
+      tags: [reservations]
+      summary: Cria reserva
+      description: O cabeçalho Idempotency-Key é repassado; o usuário logado é registrado na auditoria.
+      parameters:
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string } }
+      responses: { "201": { description: Repassado ao Reservas Service } }
+  /reservations/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get: { tags: [reservations], summary: Busca reserva, responses: { "200": { description: Repassado ao Reservas Service } } }
+    put: { tags: [reservations], summary: Altera reserva, responses: { "200": { description: Repassado ao Reservas Service } } }
+    delete: { tags: [reservations], summary: Cancela reserva, responses: { "204": { description: Repassado ao Reservas Service } } }
+  /reservations/{id}/checkin:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post: { tags: [reservations], summary: Check-in, responses: { "200": { description: Repassado ao Reservas Service } } }
+  /reservations/{id}/checkout:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post: { tags: [reservations], summary: Check-out, responses: { "200": { description: Repassado ao Reservas Service } } }
+  /guests:
+    get: { tags: [reservations], summary: Lista hóspedes, responses: { "200": { description: Repassado ao Reservas Service } } }
+    post: { tags: [reservations], summary: Cadastra hóspede, responses: { "201": { description: Repassado ao Reservas Service } } }
+  /guests/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get: { tags: [reservations], summary: Busca hóspede, responses: { "200": { description: Repassado ao Reservas Service } } }
+    put: { tags: [reservations], summary: Atualiza hóspede, responses: { "200": { description: Repassado ao Reservas Service } } }
+    delete: { tags: [reservations], summary: Exclui hóspede, responses: { "204": { description: Repassado ao Reservas Service } } }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Erro
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresAt: { type: string, format: date-time }
+        user: { type: object, description: Funcionário (sem senha) }
+
+    AggregatedData:
+      type: object
+      properties:
+        hotel: { type: object, nullable: true }
+        rooms: { type: array, items: { type: object } }
+        roomSummary:
+          type: object
+          nullable: true
+          properties:
+            totalRooms: { type: integer }
+            byStatus: { type: object, additionalProperties: { type: integer } }
+        reservations:
+          type: array
+          description: Cada reserva traz guest e room aninhados.
+          items: { type: object }
+        guests: { type: array, items: { type: object } }
+        calculations:
+          type: object
+          nullable: true
+          properties:
+            occupancyRate: { type: number, example: 80 }
+            adr: { type: number, example: 200 }
+            revPar: { type: number, example: 160 }
+            projectedRevenue: { type: number, example: 48000 }
+        metadata:
+          type: object
+          properties:
+            partial: { type: boolean }
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  source: { type: string, example: analytics-function }
+                  code: { type: string, example: TIMEOUT }
+                  message: { type: string }
+            correlationId: { type: string }
+            generatedAt: { type: string, format: date-time }
+
+    DependenciesStatus:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        dependencies:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              status: { type: string, enum: [up, down] }
+              code: { type: string }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: UNAUTHORIZED }
+            message: { type: string }
+            correlationId: { type: string }

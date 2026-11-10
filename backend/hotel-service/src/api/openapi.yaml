@@ -1,0 +1,454 @@
+openapi: 3.0.3
+info:
+  title: CloudInn Hotel Service
+  version: 1.0.0
+  description: |
+    Microserviço dono do domínio de hotéis, quartos e funcionários (staff), persistido no MongoDB.
+
+    - IDs são ObjectIds do MongoDB em hexadecimal (24 caracteres). ID em formato inválido responde 404.
+    - Erros seguem o formato `{ "error": { "code", "message", "correlationId" } }`.
+    - O cabeçalho `x-correlation-id` é aceito e devolvido em todas as respostas.
+servers:
+  - url: /
+tags:
+  - name: rooms
+    description: Quartos e status operacional
+  - name: staff
+    description: Funcionários e credenciais
+  - name: hotels
+    description: Catálogo do hotel
+  - name: health
+    description: Saúde do serviço
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness do processo
+      responses:
+        "200":
+          description: Processo ativo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  service: { type: string, example: hotel-service }
+                  persistence: { type: string, example: mongodb }
+                  eventPublisher: { type: string, example: log }
+  /health/ready:
+    get:
+      tags: [health]
+      summary: Readiness (MongoDB acessível)
+      responses:
+        "200": { description: Banco acessível }
+        "503": { description: Banco indisponível }
+
+  /rooms:
+    get:
+      tags: [rooms]
+      summary: Lista quartos
+      operationId: listRooms
+      parameters:
+        - { name: hotelId, in: query, required: false, schema: { type: string } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/RoomStatus" } }
+      responses:
+        "200":
+          description: Quartos encontrados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Room" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [rooms]
+      summary: Cadastra um quarto
+      operationId: createRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoomCreate" }
+      responses:
+        "201":
+          description: Quarto criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Room" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /rooms/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [rooms]
+      summary: Busca um quarto
+      operationId: getRoom
+      responses:
+        "200":
+          description: Quarto encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Room" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [rooms]
+      summary: Atualiza dados cadastrais do quarto
+      description: Para alterar o status, use `PATCH /rooms/{id}/status`.
+      operationId: updateRoom
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoomUpdate" }
+      responses:
+        "200":
+          description: Quarto atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Room" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [rooms]
+      summary: Exclui um quarto
+      description: Quartos com status `reserved` ou `occupied` não podem ser excluídos (409).
+      operationId: deleteRoom
+      responses:
+        "204": { description: Quarto excluído }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /rooms/{id}/status:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    patch:
+      tags: [rooms]
+      summary: Altera o status operacional do quarto
+      description: |
+        Transições permitidas: available→reserved; reserved→occupied|available; occupied→dirty;
+        dirty→cleaning; cleaning→available. Ao ficar `available`, publica o evento RoomCleaningCompleted.
+      operationId: changeRoomStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RoomStatusChange" }
+      responses:
+        "200":
+          description: Status alterado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Room" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /staff:
+    get:
+      tags: [staff]
+      summary: Lista funcionários
+      operationId: listStaff
+      parameters:
+        - { name: hotelId, in: query, required: false, schema: { type: string } }
+        - { name: role, in: query, required: false, schema: { $ref: "#/components/schemas/StaffRole" } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/StaffStatus" } }
+        - { name: department, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: Funcionários encontrados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Staff" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [staff]
+      summary: Cadastra um funcionário
+      description: A senha é gravada apenas como hash (bcrypt) e nunca é devolvida.
+      operationId: createStaff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffCreate" }
+      responses:
+        "201":
+          description: Funcionário criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /staff/verify-credentials:
+    post:
+      tags: [staff]
+      summary: Verifica login e senha (usado pelo login do BFF)
+      description: A resposta 401 é a mesma para login inexistente, senha errada ou funcionário inativo.
+      operationId: verifyStaffCredentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "200":
+          description: Credenciais válidas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /staff/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [staff]
+      summary: Busca um funcionário
+      operationId: getStaff
+      responses:
+        "200":
+          description: Funcionário encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [staff]
+      summary: Atualiza um funcionário
+      description: Informe `password` apenas para trocar a senha.
+      operationId: updateStaff
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffUpdate" }
+      responses:
+        "200":
+          description: Funcionário atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Staff" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [staff]
+      summary: Exclui um funcionário
+      operationId: deleteStaff
+      responses:
+        "204": { description: Funcionário excluído }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /hotels/{id}/catalog:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [hotels]
+      summary: Catálogo do hotel (dados, quartos e contagem por status)
+      description: Consumido pelo BFF em GET /aggregated-data.
+      operationId: getHotelCatalog
+      responses:
+        "200":
+          description: Catálogo encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HotelCatalog" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: ObjectId em hexadecimal
+      schema: { type: string, example: 6650f1c2a4b5c6d7e8f90123 }
+
+  responses:
+    BadRequest:
+      description: Dados inválidos
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Credenciais inválidas
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflito com o estado atual (duplicidade ou transição inválida)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    RoomType:
+      type: string
+      enum: [STD, DLX, SUI, PRE]
+    RoomStatus:
+      type: string
+      enum: [available, reserved, occupied, dirty, cleaning]
+    StaffRole:
+      type: string
+      enum: [manager, sub_manager, receptionist, housekeeper]
+    StaffStatus:
+      type: string
+      enum: [active, inactive, on_leave]
+
+    Room:
+      type: object
+      properties:
+        id: { type: string }
+        hotelId: { type: string }
+        number: { type: string, example: "101" }
+        roomType: { $ref: "#/components/schemas/RoomType" }
+        floor: { type: integer, nullable: true, example: 1 }
+        amenities: { type: array, items: { type: string }, example: [wifi, frigobar] }
+        status: { $ref: "#/components/schemas/RoomStatus" }
+        currentReservationId:
+          type: string
+          nullable: true
+          description: Reserva vinculada ao quarto (preenchida pelos eventos ReservationCreated e CheckInCompleted).
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    RoomCreate:
+      type: object
+      additionalProperties: false
+      required: [hotelId, number, roomType]
+      properties:
+        hotelId: { type: string }
+        number: { type: string, example: "101" }
+        roomType: { $ref: "#/components/schemas/RoomType" }
+        floor: { type: integer, nullable: true }
+        amenities: { type: array, items: { type: string } }
+        status: { $ref: "#/components/schemas/RoomStatus" }
+    RoomUpdate:
+      type: object
+      additionalProperties: false
+      required: [number, roomType]
+      properties:
+        number: { type: string }
+        roomType: { $ref: "#/components/schemas/RoomType" }
+        floor: { type: integer, nullable: true }
+        amenities: { type: array, items: { type: string } }
+        status:
+          allOf: [{ $ref: "#/components/schemas/RoomStatus" }]
+          description: Aceito apenas se igual ao status atual.
+    RoomStatusChange:
+      type: object
+      additionalProperties: false
+      required: [status]
+      properties:
+        status: { $ref: "#/components/schemas/RoomStatus" }
+        staffId: { type: string }
+
+    Staff:
+      type: object
+      description: Nunca inclui a senha nem o hash.
+      properties:
+        id: { type: string }
+        hotelId: { type: string }
+        name: { type: string, example: Mariana Costa }
+        username: { type: string, example: gerente }
+        email: { type: string, example: gerente@cloudinn.com }
+        role: { $ref: "#/components/schemas/StaffRole" }
+        roleLabel: { type: string, example: Gerente Geral }
+        department: { type: string }
+        shift: { type: string }
+        status: { $ref: "#/components/schemas/StaffStatus" }
+        phone: { type: string }
+        document: { type: string }
+        avatar: { type: string, example: MC }
+        color: { type: string, example: "#14248A" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StaffCreate:
+      type: object
+      additionalProperties: false
+      required: [hotelId, name, username, role, password]
+      properties:
+        hotelId: { type: string }
+        name: { type: string }
+        username: { type: string }
+        password: { type: string, format: password, minLength: 8 }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/StaffRole" }
+        roleLabel: { type: string }
+        department: { type: string }
+        shift: { type: string }
+        status: { $ref: "#/components/schemas/StaffStatus" }
+        phone: { type: string }
+        document: { type: string }
+        avatar: { type: string }
+        color: { type: string }
+    StaffUpdate:
+      type: object
+      additionalProperties: false
+      required: [name, username, role]
+      properties:
+        name: { type: string }
+        username: { type: string }
+        password: { type: string, format: password, minLength: 8 }
+        email: { type: string, format: email }
+        role: { $ref: "#/components/schemas/StaffRole" }
+        roleLabel: { type: string }
+        department: { type: string }
+        shift: { type: string }
+        status: { $ref: "#/components/schemas/StaffStatus" }
+        phone: { type: string }
+        document: { type: string }
+        avatar: { type: string }
+        color: { type: string }
+    Credentials:
+      type: object
+      additionalProperties: false
+      required: [login, password]
+      properties:
+        login: { type: string, description: username ou e-mail }
+        password: { type: string, format: password }
+
+    Hotel:
+      type: object
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        cnpj: { type: string }
+        address: { type: object }
+        phone: { type: string }
+        email: { type: string }
+        checkInOutPolicies: { type: object }
+        createdAt: { type: string, format: date-time }
+    HotelCatalog:
+      type: object
+      properties:
+        hotel: { $ref: "#/components/schemas/Hotel" }
+        rooms: { type: array, items: { $ref: "#/components/schemas/Room" } }
+        summary:
+          type: object
+          properties:
+            totalRooms: { type: integer, example: 16 }
+            byStatus:
+              type: object
+              additionalProperties: { type: integer }
+              example: { available: 8, reserved: 2, occupied: 3, dirty: 2, cleaning: 1 }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: VALIDATION_ERROR }
+            message: { type: string }
+            correlationId: { type: string }

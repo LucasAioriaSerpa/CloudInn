@@ -1,29 +1,21 @@
-const config = require('../../config');
+const crypto = require('node:crypto');
 
-function internalAuthMiddleware(req, res, next) {
-  // Endpoints públicos de observabilidade e documentação
-  const openPaths = ['/health', '/openapi.json', '/docs'];
-  if (openPaths.includes(req.path) || req.path.startsWith('/docs')) {
-    return next();
-  }
+// Aceita só chamadas com o cabeçalho x-internal-api-key enviado pelo BFF.
+// Saúde e documentação ficam abertas para probes e para a banca consultar o Swagger.
+const PUBLIC_PATHS = ['/health', '/docs', '/openapi.json'];
+const digest = value => crypto.createHash('sha256').update(String(value)).digest();
 
-  // Em ambiente de teste unitário local sem auth ativada, permite bypass
-  if (process.env.NODE_ENV === 'test' && !req.headers['x-internal-api-key']) {
-    return next();
-  }
-
-  const apiKey = req.headers['x-internal-api-key'];
-  if (!apiKey || apiKey !== config.internalApiKey) {
-    return res.status(401).json({
-      error: {
-        code: 'UNAUTHORIZED',
-        message: 'Acesso não autorizado: x-internal-api-key inválida ou ausente.',
-        correlationId: req.correlationId || 'none'
-      }
+function internalAuth(expectedKey) {
+  if (!expectedKey) return (request, response, next) => next();
+  const expected = digest(expectedKey);
+  return (request, response, next) => {
+    if (PUBLIC_PATHS.some(path => request.path === path || request.path.startsWith(`${path}/`))) return next();
+    const received = request.get('x-internal-api-key');
+    if (received && crypto.timingSafeEqual(digest(received), expected)) return next();
+    return response.status(401).json({
+      error: { code: 'UNAUTHORIZED', message: 'Chamada interna sem chave válida.', correlationId: request.correlationId }
     });
-  }
-
-  next();
+  };
 }
 
-module.exports = { internalAuthMiddleware };
+module.exports = { internalAuth };

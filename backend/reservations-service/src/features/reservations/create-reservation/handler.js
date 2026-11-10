@@ -1,1 +1,0 @@
-module.exports = require('../../../application/features/reservations/create-reservation/handler');

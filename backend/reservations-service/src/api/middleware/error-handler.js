@@ -1,31 +1,38 @@
-function errorHandler(err, req, res, next) {
-  const correlationId = req.correlationId || 'none';
-  let statusCode = err.statusCode || (err.status && typeof err.status === 'number' ? err.status : 500);
+const { ValidationError, ConflictError, NotFoundError } = require('../../domain/errors');
 
-  if (
-    err.name === 'MissingIdempotencyKeyError' ||
-    err.name === 'InvalidTotalAmountError' ||
-    err.message?.includes('Checkout must be after check-in')
-  ) {
-    statusCode = 400;
-  } else if (
-    err.name === 'RoomUnavailableError' ||
-    err.message?.includes('Quarto indisponível')
-  ) {
-    statusCode = 409;
-  } else if (err.name === 'SyntaxError' || err.type === 'entity.parse.failed') {
-    statusCode = 400;
-  }
+const STATUS_BY_ERROR = new Map([
+  [ValidationError, 400],
+  [NotFoundError, 404],
+  [ConflictError, 409]
+]);
 
-  const errorResponse = {
-    error: {
-      code: err.code || (statusCode === 409 ? 'ROOM_UNAVAILABLE' : statusCode === 400 ? 'VALIDATION_ERROR' : statusCode === 404 ? 'NOT_FOUND' : 'INTERNAL_ERROR'),
-      message: err.message || 'Erro interno no Reservas Service.',
-      correlationId
-    }
-  };
+const errorBody = (code, message, correlationId) => ({ error: { code, message, correlationId } });
 
-  res.status(statusCode).json(errorResponse);
+function notFound(request, response) {
+  response.status(404).json(errorBody('NOT_FOUND', 'Rota não encontrada.', request.correlationId));
 }
 
-module.exports = { errorHandler };
+// Traduz erros de domínio para HTTP. Erros inesperados viram 500 sem expor detalhes ao cliente.
+function errorHandler(logger) {
+  return (error, request, response, next) => {
+    if (response.headersSent) return next(error);
+    const { correlationId } = request;
+
+    if (error.type === 'entity.parse.failed') {
+      return response.status(400).json(errorBody('VALIDATION_ERROR', 'O corpo da requisição deve ser um JSON válido.', correlationId));
+    }
+    if (error.type && error.status >= 400 && error.status < 500) {
+      return response.status(error.status).json(errorBody('BAD_REQUEST', 'Requisição inválida.', correlationId));
+    }
+    for (const [ErrorType, status] of STATUS_BY_ERROR) {
+      if (error instanceof ErrorType) {
+        return response.status(status).json(errorBody(error.code, error.message, correlationId));
+      }
+    }
+
+    logger.error('Erro inesperado', { error, correlationId });
+    return response.status(500).json(errorBody('INTERNAL_ERROR', 'Erro interno ao processar a requisição.', correlationId));
+  };
+}
+
+module.exports = { errorHandler, notFound };

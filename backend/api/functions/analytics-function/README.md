@@ -2,8 +2,8 @@
 
 Duas funções:
 
-- `httpTriggerAnalytics` — `POST /api/httpTriggerAnalytics` (auth por function key). Calcula ocupação, ADR, RevPAR e projeção. O gateway expõe como `POST /api/v1/analytics/calculate`.
-- `projectEvents` — trigger do Service Bus (`cloudinn.domain.events` / `sub-analytics-worker`). Valida o CloudEvent e registra (persistência da projeção ainda a fazer).
+- `httpTriggerAnalytics` — `POST /api/httpTriggerAnalytics` (auth por function key, enviada no cabeçalho `x-functions-key`). Calcula ocupação, ADR, RevPAR e projeção. Chamada pelo BFF em `GET /aggregated-data`.
+- `projectEvents` — trigger do Service Bus (`cloudinn.domain.events` / `sub-analytics-worker`). Valida o CloudEvent e registra uma linha de log por evento, com tipo, id, assunto e `correlationId` (consulte em Application Insights ou no Log stream). Não há persistência própria: os indicadores são calculados sob demanda pelo HTTP Trigger.
 
 Payload de exemplo:
 

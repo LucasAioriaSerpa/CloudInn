@@ -1,0 +1,369 @@
+openapi: 3.0.3
+info:
+  title: CloudInn Reservas Service
+  version: 1.0.0
+  description: |
+    Microserviço dono do domínio de reservas e hóspedes, persistido no Azure SQL Database.
+
+    - IDs são GUIDs. ID em formato inválido responde 404.
+    - Datas de estadia são dias (`YYYY-MM-DD`); um ISO com horário é aceito e convertido para o dia em UTC.
+    - Ciclo da reserva: `confirmed` (criação) → `active` (check-in) → `completed` (check-out);
+      `pending` ou `confirmed` podem ser cancelados.
+    - Overbooking: reservas `confirmed` ou `active` do mesmo quarto não podem ter períodos sobrepostos (409).
+    - Erros seguem o formato `{ "error": { "code", "message", "correlationId" } }`.
+servers:
+  - url: /
+tags:
+  - name: reservations
+  - name: guests
+  - name: health
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness do processo
+      responses:
+        "200": { description: Processo ativo }
+  /health/ready:
+    get:
+      tags: [health]
+      summary: Readiness (Azure SQL acessível)
+      responses:
+        "200": { description: Banco acessível }
+        "503": { description: Banco indisponível }
+
+  /reservations:
+    get:
+      tags: [reservations]
+      summary: Lista reservas
+      operationId: listReservations
+      parameters:
+        - { name: hotelId, in: query, required: false, schema: { type: string } }
+        - { name: roomId, in: query, required: false, schema: { type: string } }
+        - { name: guestId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: status, in: query, required: false, schema: { $ref: "#/components/schemas/ReservationStatus" } }
+        - name: date
+          in: query
+          required: false
+          description: Reservas cuja estadia inclui o dia (check-in ≤ date < check-out).
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: Reservas encontradas
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Reservation" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [reservations]
+      summary: Cria uma reserva confirmada
+      description: |
+        Idempotente pela chave `Idempotency-Key` (cabeçalho, preferencial) ou `idempotencyKey` (corpo):
+        repetir a mesma chave em até 24 horas devolve a reserva já criada, sem duplicar.
+      operationId: createReservation
+      parameters:
+        - { name: Idempotency-Key, in: header, required: false, schema: { type: string, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReservationCreate" }
+      responses:
+        "201":
+          description: Reserva criada (ou a já criada com a mesma chave)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /reservations/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [reservations]
+      summary: Busca uma reserva
+      operationId: getReservation
+      responses:
+        "200":
+          description: Reserva encontrada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [reservations]
+      summary: Altera quarto, datas, valor ou origem
+      description: Permitido apenas para reservas `pending` ou `confirmed`; revalida a disponibilidade do quarto.
+      operationId: updateReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReservationUpdate" }
+      responses:
+        "200":
+          description: Reserva alterada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [reservations]
+      summary: Cancela a reserva
+      description: Não apaga o registro; muda o status para `cancelled` e grava a auditoria.
+      operationId: cancelReservation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusAction" }
+      responses:
+        "204": { description: Reserva cancelada }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /reservations/{id}/checkin:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [reservations]
+      summary: Registra o check-in
+      description: Exige status `confirmed` e a data atual (UTC) dentro do período da reserva.
+      operationId: checkInReservation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusAction" }
+      responses:
+        "200":
+          description: Check-in registrado (status active)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /reservations/{id}/checkout:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [reservations]
+      summary: Registra o check-out
+      description: Exige status `active`.
+      operationId: checkOutReservation
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StatusAction" }
+      responses:
+        "200":
+          description: Check-out registrado (status completed)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Reservation" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /guests:
+    get:
+      tags: [guests]
+      summary: Lista hóspedes
+      operationId: listGuests
+      parameters:
+        - { name: search, in: query, required: false, description: Trecho do nome, e-mail ou documento, schema: { type: string } }
+        - { name: document, in: query, required: false, description: Documento exato, schema: { type: string } }
+      responses:
+        "200":
+          description: Hóspedes encontrados
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Guest" } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [guests]
+      summary: Cadastra um hóspede
+      operationId: createGuest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GuestCreate" }
+      responses:
+        "201":
+          description: Hóspede criado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+  /guests/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [guests]
+      summary: Busca um hóspede
+      operationId: getGuest
+      responses:
+        "200":
+          description: Hóspede encontrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [guests]
+      summary: Atualiza um hóspede (campos parciais)
+      operationId: updateGuest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/GuestUpdate" }
+      responses:
+        "200":
+          description: Hóspede atualizado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Guest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [guests]
+      summary: Exclui um hóspede sem reservas
+      operationId: deleteGuest
+      responses:
+        "204": { description: Hóspede excluído }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+
+components:
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Dados inválidos
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Conflict:
+      description: Conflito (quarto indisponível, duplicidade ou transição de status inválida)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    ReservationStatus:
+      type: string
+      enum: [pending, confirmed, active, completed, cancelled]
+    OriginChannel:
+      type: string
+      enum: [DIRECT, BOOKING, AIRBNB, EXPEDIA]
+      default: DIRECT
+
+    Reservation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, example: RSV-1A2B3C4D5E }
+        guestId: { type: string, format: uuid }
+        hotelId: { type: string, description: ID do hotel no Hotel Service }
+        roomId: { type: string, description: ID do quarto no Hotel Service }
+        checkInDate: { type: string, format: date, example: "2026-11-10" }
+        checkOutDate: { type: string, format: date, example: "2026-11-13" }
+        status: { $ref: "#/components/schemas/ReservationStatus" }
+        totalAmount: { type: number, example: 450 }
+        originChannel: { $ref: "#/components/schemas/OriginChannel" }
+        actualCheckInAt: { type: string, format: date-time, nullable: true }
+        actualCheckOutAt: { type: string, format: date-time, nullable: true }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ReservationCreate:
+      type: object
+      additionalProperties: false
+      required: [guestId, hotelId, roomId, checkInDate, checkOutDate, totalAmount]
+      properties:
+        guestId: { type: string, format: uuid }
+        hotelId: { type: string }
+        roomId: { type: string }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        totalAmount: { type: number, minimum: 0 }
+        originChannel: { $ref: "#/components/schemas/OriginChannel" }
+        idempotencyKey: { type: string, description: Alternativa ao cabeçalho Idempotency-Key }
+        consumer: { type: string, description: "Origem da chave de idempotência (padrão: reservations-api)" }
+        changedBy: { type: string, description: Registrado na auditoria }
+    ReservationUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        roomId: { type: string }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        totalAmount: { type: number, minimum: 0 }
+        originChannel: { $ref: "#/components/schemas/OriginChannel" }
+    StatusAction:
+      type: object
+      additionalProperties: false
+      properties:
+        changedBy: { type: string, description: Registrado na auditoria }
+        reason: { type: string }
+
+    Guest:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, example: João Silva }
+        document: { type: string, example: 123.456.789-00 }
+        email: { type: string, nullable: true }
+        phone: { type: string, nullable: true }
+        vip: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    GuestCreate:
+      type: object
+      additionalProperties: false
+      required: [name, document]
+      properties:
+        name: { type: string, maxLength: 150 }
+        document: { type: string, maxLength: 30 }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, maxLength: 25, nullable: true }
+        vip: { type: boolean }
+    GuestUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, maxLength: 150 }
+        document: { type: string, maxLength: 30 }
+        email: { type: string, format: email, nullable: true }
+        phone: { type: string, maxLength: 25, nullable: true }
+        vip: { type: boolean }
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string, example: CONFLICT }
+            message: { type: string }
+            correlationId: { type: string }

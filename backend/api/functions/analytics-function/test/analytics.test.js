@@ -1,6 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { calculate, mask, validateCloudEvent, ValidationError } = require('../src/lib/analytics');
+const { calculate, mask, validateCloudEvent, describeEvent, ValidationError } = require('../src/lib/analytics');
+
+test('linha de log do evento traz tipo, id e correlationId', () => {
+  const line = describeEvent({ specversion: '1.0', id: 'e1', source: '/cloudinn/reservations-service', type: 'CheckInCompleted', time: 't', subject: 'r1', correlationid: 'demo-123' });
+  assert.equal(line, 'evento CheckInCompleted id=e1 subject=r1 source=/cloudinn/reservations-service correlationId=demo-123');
+});
 
 test('calcula ocupação, ADR, RevPAR e projeção', () => {
   const r = calculate({ hotelId: 'h1', totalRooms: 10, occupiedRooms: 8, roomRevenue: 1600, daysInMonth: 30 });

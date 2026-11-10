@@ -1,0 +1,216 @@
+openapi: 3.0.4
+info:
+  title: CloudInn BFF API
+  version: 3.0.0
+  description: |
+    API Backend for Frontend do CloudInn. Única API de negócio consumida pela SPA React.
+    O BFF agrega Hotel Service, Reservas/Guests Service e Azure Function analítica
+    por meio do Azure API Management. Falhas analíticas podem produzir resposta parcial.
+servers:
+  - url: https://{gateway}/api/v1
+    description: BFF publicado atrás do Azure API Management
+    variables:
+      gateway:
+        default: cloudinn-api.azure-api.net
+tags:
+  - name: Dashboard
+    description: Agregação de dados operacionais para a interface.
+paths:
+  /aggregated-data:
+    get:
+      tags: [Dashboard]
+      operationId: getAggregatedData
+      summary: Retorna os dados agregados do painel
+      description: |
+        Consolida hotel/quartos/diárias/staff, hóspedes/reservas e indicadores analíticos.
+        Cache local do BFF com TTL de 10 segundos. Se o subsistema analítico falhar ou
+        exceder o timeout, os dados operacionais são retornados com metadata.partial=true.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hotelId
+          in: query
+          required: true
+          description: Identificador do hotel consultado.
+          schema:
+            type: string
+          example: H01
+        - name: date
+          in: query
+          required: true
+          description: Data de referência dos indicadores.
+          schema:
+            type: string
+            format: date
+          example: '2026-10-10'
+        - name: x-correlation-id
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Identificador de correlação propagado pelo Gateway.
+      responses:
+        '200':
+          description: Dados agregados retornados. Pode ser parcial se a análise estiver indisponível.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AggregatedDashboard'
+              example:
+                hotel:
+                  id: H01
+                  name: CloudInn Resort & Hotel
+                  rooms:
+                    - id: R101
+                      number: '101'
+                      roomType: STD
+                      floor: 1
+                      status: available
+                  dailyRates:
+                    - roomType: STD
+                      pricePerNight: 280
+                  staff:
+                    - id: S01
+                      name: Camila Rocha
+                      role: receptionist
+                      shift: Manhã
+                guests:
+                  - id: G10
+                    name: João Silva
+                    document: '***.***.***-00'
+                    email: joao.silva@email.com
+                    phone: '+55 41 *****-9999'
+                    vipStatus: false
+                reservations:
+                  - id: RES-501
+                    code: CIN-8841
+                    guestId: G10
+                    roomIdRef: R101
+                    checkInDate: '2026-10-10T14:00:00Z'
+                    checkOutDate: '2026-10-15T12:00:00Z'
+                    status: ACTIVE
+                    totalAmount: 2250
+                    originChannel: BOOKING
+                calculations:
+                  occupancyRate: 78.5
+                  projectedRevenue: 14250
+                  revPar: 265.4
+                  roomsCleaningPending: 4
+                metadata:
+                  generatedAt: '2026-10-10T09:15:30Z'
+                  partial: false
+        '400':
+          description: Parâmetros inválidos.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '401':
+          description: Token ausente ou inválido.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '403':
+          description: Usuário sem permissão para o hotel.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '500':
+          description: Falha interna ao compor a resposta.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    AggregatedDashboard:
+      type: object
+      required: [hotel, guests, reservations, calculations, metadata]
+      properties:
+        hotel:
+          type: object
+          properties:
+            id: {type: string}
+            name: {type: string}
+            rooms:
+              type: array
+              items: {$ref: '#/components/schemas/RoomSummary'}
+            dailyRates:
+              type: array
+              items: {$ref: '#/components/schemas/DailyRate'}
+            staff:
+              type: array
+              items: {$ref: '#/components/schemas/StaffSummary'}
+        guests:
+          type: array
+          items: {$ref: '#/components/schemas/GuestSummary'}
+        reservations:
+          type: array
+          items: {$ref: '#/components/schemas/ReservationSummary'}
+        calculations:
+          type: object
+          properties:
+            occupancyRate: {type: number, format: float}
+            projectedRevenue: {type: number, format: double}
+            revPar: {type: number, format: double}
+            roomsCleaningPending: {type: integer}
+        metadata:
+          type: object
+          required: [generatedAt, partial]
+          properties:
+            generatedAt: {type: string, format: date-time}
+            partial: {type: boolean}
+            unavailableSources:
+              type: array
+              items: {type: string}
+    RoomSummary:
+      type: object
+      properties:
+        id: {type: string}
+        number: {type: string}
+        roomType: {type: string}
+        floor: {type: integer}
+        status: {type: string, enum: [available, reserved, occupied, dirty, cleaning]}
+    DailyRate:
+      type: object
+      properties:
+        roomType: {type: string}
+        pricePerNight: {type: number, format: double}
+    StaffSummary:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        role: {type: string, enum: [manager, sub_manager, receptionist, housekeeper]}
+        shift: {type: string}
+    GuestSummary:
+      type: object
+      properties:
+        id: {type: string}
+        name: {type: string}
+        document: {type: string, description: Documento mascarado na resposta do painel.}
+        email: {type: string, format: email}
+        phone: {type: string}
+        vipStatus: {type: boolean}
+    ReservationSummary:
+      type: object
+      properties:
+        id: {type: string}
+        code: {type: string}
+        guestId: {type: string}
+        roomIdRef: {type: string}
+        checkInDate: {type: string, format: date-time}
+        checkOutDate: {type: string, format: date-time}
+        status: {type: string, enum: [PENDING, CONFIRMED, ACTIVE, COMPLETED, CANCELLED]}
+        totalAmount: {type: number, format: double}
+        originChannel: {type: string}
+    Error:
+      type: object
+      properties:
+        statusCode: {type: integer}
+        code: {type: string}
+        message: {type: string}
+        correlationId: {type: string}

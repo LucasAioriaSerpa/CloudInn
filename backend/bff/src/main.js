@@ -1,77 +1,40 @@
-const express = require('express');
-const cors = require('cors');
-const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
+const { loadConfig, ConfigError } = require('./config');
+const { createLogger } = require('./infrastructure/logging/logger');
+const { composeBff } = require('./compose');
 
-const config = require('./config');
-const { correlationMiddleware } = require('./api/middleware/correlation');
-const { loggerMiddleware } = require('./api/middleware/logger');
-const { errorHandler } = require('./api/middleware/error-handler');
-const { createHealthRouter } = require('./api/routes/health');
-const { createAggregatedDataRouter } = require('./api/routes/aggregated-data');
+const envFile = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
-const { GetAggregatedDataHandler } = require('./application/features/aggregated-data/handler');
-const { AggregatedDataAssembler } = require('./application/features/aggregated-data/assembler');
-const { GatewayClient } = require('./infrastructure/gateway-client');
-
-function createApp({ handler } = {}) {
-  const app = express();
-
-  app.use(cors({
-    origin: config.corsOrigins,
-    credentials: true
-  }));
-
-  app.use(express.json());
-  app.use(correlationMiddleware);
-  app.use(loggerMiddleware);
-
-  const defaultTransport = {
-    get: async route => ({ route, items: [], guests: [] }),
-    post: async route => ({ route, occupancyRate: 0, projectedRevenue: 0 })
-  };
-
-  const activeHandler = handler || new GetAggregatedDataHandler({
-    gatewayClient: new GatewayClient({ transport: defaultTransport }),
-    assembler: new AggregatedDataAssembler()
-  });
-
-  app.use(createHealthRouter());
-  app.use(createAggregatedDataRouter({ handler: activeHandler }));
-
-  // Fallback 404
-  app.use((req, res) => {
-    res.status(404).json({
-      error: {
-        code: 'NOT_FOUND',
-        message: 'Endpoint não encontrado.',
-        correlationId: req.correlationId || 'none'
-      }
-    });
-  });
-
-  // Middleware central de tratamento de erros
-  app.use(errorHandler);
-
-  return app;
+let config;
+try {
+  config = loadConfig();
+} catch (error) {
+  if (!(error instanceof ConfigError)) throw error;
+  process.stderr.write(`${JSON.stringify({ level: 'error', service: 'bff', message: 'Configuração inválida; o serviço não será iniciado.', missing: error.missing, invalid: error.invalid })}\n`);
+  process.exit(1);
 }
 
-function createBffServer(customHandler) {
-  const app = createApp({ handler: customHandler });
-  return http.createServer(app);
-}
+const logger = createLogger({ service: config.service, level: config.logLevel, includeStack: config.nodeEnv !== 'production' });
+const server = composeBff(config, { logger });
 
-const app = createApp();
-const server = http.createServer(app);
-
-if (require.main === module) {
-  server.listen(config.port, '0.0.0.0', () => {
-    console.log(`[BFF] Servidor Express rodando na porta ${config.port} (0.0.0.0)`);
+server.listen(config.port, '0.0.0.0', () => {
+  logger.info('BFF iniciado', {
+    port: config.port,
+    hotelService: new URL(config.hotelServiceUrl).host,
+    reservationsService: new URL(config.reservationsServiceUrl).host,
+    analyticsFunction: new URL(config.analyticsFunctionUrl).host,
+    corsOrigins: config.corsOrigins,
+    timeoutMs: config.downstreamTimeoutMs
   });
+});
+
+function shutdown(signal) {
+  logger.info('Encerrando o BFF', { signal });
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000).unref();
 }
 
-module.exports = {
-  app,
-  server,
-  createApp,
-  createBffServer
-};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

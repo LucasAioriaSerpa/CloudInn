@@ -1,77 +1,76 @@
+const { assertPort } = require('../../ports');
+const { NotFoundError, UpstreamError } = require('../../errors');
+const { buildCalculationInput } = require('./occupancy');
+
+const SOURCES = { hotel: 'hotel-service', reservations: 'reservations-service', guests: 'reservations-service/guests', analytics: 'analytics-function' };
+
+// GET /aggregated-data: consulta Hotel e Reservas em paralelo e, com esses dados, a Function.
+// Falha de uma fonte vira resposta parcial (metadata.partial + errors); só falha de todas vira 503.
 class GetAggregatedDataHandler {
-  constructor({ gatewayClient, assembler }) {
-    this.gatewayClient = gatewayClient;
+  constructor({ hotelService, reservationsService, analytics, clock, assembler }) {
+    this.hotelService = assertPort('hotelService', hotelService, ['getCatalog']);
+    this.reservationsService = assertPort('reservationsService', reservationsService);
+    this.analytics = assertPort('analytics', analytics);
+    this.clock = assertPort('clock', clock);
     this.assembler = assembler;
   }
 
-  async execute(query) {
-    if (!query.hotelId || !query.date) {
-      const error = new Error('Parâmetros obrigatórios ausentes: hotelId e date são necessários.');
-      error.statusCode = 400;
-      error.code = 'VALIDATION_ERROR';
-      throw error;
-    }
-
+  async execute(query, { correlationId } = {}) {
+    const context = { correlationId };
     const errors = [];
 
-    // Busca hotel e reservas em paralelo usando Promise.allSettled
-    const [hotelResult, reservationsResult] = await Promise.allSettled([
-      this.gatewayClient.fetchHotel(query.hotelId, query.correlationId),
-      this.gatewayClient.fetchReservations(query.hotelId, query.date, query.correlationId)
+    const [catalogResult, reservationsResult, guestsResult] = await Promise.allSettled([
+      this.hotelService.getCatalog(query.hotelId, context),
+      this.reservationsService.listReservations({ hotelId: query.hotelId, date: query.date }, context),
+      this.reservationsService.listGuests(context)
     ]);
 
-    const hotel = hotelResult.status === 'fulfilled' ? hotelResult.value : null;
-    if (hotelResult.status === 'rejected') {
-      errors.push({
-        source: 'hotel-service',
-        code: 'UPSTREAM_ERROR',
-        message: hotelResult.reason?.message || 'Falha ao buscar dados do hotel'
-      });
-    }
+    // Hotel inexistente não é falha parcial: é 404.
+    if (catalogResult.status === 'rejected' && catalogResult.reason instanceof NotFoundError) throw catalogResult.reason;
 
-    const reservations = reservationsResult.status === 'fulfilled' ? reservationsResult.value : null;
-    if (reservationsResult.status === 'rejected') {
-      errors.push({
-        source: 'reservations-service',
-        code: 'UPSTREAM_ERROR',
-        message: reservationsResult.reason?.message || 'Falha ao buscar reservas'
-      });
-    }
-
-    // Se ambas as fontes downstream principais falharem, responder 503
-    if (!hotel && !reservations) {
-      const error = new Error('Todas as fontes de dados downstream estão indisponíveis.');
-      error.statusCode = 503;
-      error.code = 'DOWNSTREAM_UNAVAILABLE';
-      throw error;
-    }
+    const valueOf = (result, source) => {
+      if (result.status === 'fulfilled') return result.value;
+      if (!(result.reason instanceof UpstreamError)) throw result.reason; // defeito de programação: não esconder
+      errors.push({ source, code: result.reason.code, message: result.reason.message });
+      return null;
+    };
+    const catalog = valueOf(catalogResult, SOURCES.hotel);
+    const reservations = valueOf(reservationsResult, SOURCES.reservations);
+    const guests = valueOf(guestsResult, SOURCES.guests);
 
     let calculations = null;
-
     if (query.includeCalculations) {
-      try {
-        calculations = await this.gatewayClient.fetchCalculations({
-          hotelId: query.hotelId,
-          date: query.date,
-          correlationId: query.correlationId
-        });
-      } catch (analyticsError) {
-        errors.push({
-          source: 'analytics',
-          code: analyticsError.code || 'TIMEOUT',
-          message: analyticsError.message || 'Falha ou timeout no cálculo analítico'
-        });
-      }
+      calculations = await this.calculate({ query, catalog, reservations, errors, context });
+    }
+
+    if (!catalog && !reservations && !guests && !calculations) {
+      throw new UpstreamError('bff', 'ALL_SOURCES_UNAVAILABLE', 'Nenhuma fonte de dados respondeu.');
     }
 
     return this.assembler.assemble({
-      hotel,
-      reservations,
-      calculations,
-      errors,
-      correlationId: query.correlationId
+      catalog, reservations, guests, calculations, errors,
+      correlationId, generatedAt: this.clock.now().toISOString()
     });
+  }
+
+  async calculate({ query, catalog, reservations, errors, context }) {
+    if (!catalog || !reservations) {
+      errors.push({ source: SOURCES.analytics, code: 'SKIPPED', message: 'Cálculo não executado: faltam dados do hotel ou das reservas.' });
+      return null;
+    }
+    const input = buildCalculationInput({ hotelId: query.hotelId, date: query.date, catalog, reservations });
+    if (input.totalRooms === 0) {
+      errors.push({ source: SOURCES.analytics, code: 'SKIPPED', message: 'Cálculo não executado: o hotel não tem quartos cadastrados.' });
+      return null;
+    }
+    try {
+      return await this.analytics.calculate(input, context);
+    } catch (error) {
+      if (!(error instanceof UpstreamError)) throw error;
+      errors.push({ source: SOURCES.analytics, code: error.code, message: error.message });
+      return null;
+    }
   }
 }
 
-module.exports = { GetAggregatedDataHandler };
+module.exports = { GetAggregatedDataHandler, SOURCES };

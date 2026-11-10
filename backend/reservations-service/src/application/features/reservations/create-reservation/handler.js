@@ -1,96 +1,61 @@
 const crypto = require('node:crypto');
-const { DateRange } = require('../../../../domain/date-range');
-const {
-  MissingIdempotencyKeyError,
-  InvalidTotalAmountError
-} = require('../../../../domain/errors');
+const { Reservation } = require('../../../../domain/reservation');
+const { ConflictError, ValidationError } = require('../../../../domain/errors');
+const { assertPort } = require('../../../ports');
+const { reservationEvent } = require('../../../reservation-events');
 
+const generateCode = () => `RSV-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+
+// Tudo em uma transação SERIALIZABLE: idempotência, existência do hóspede, verificação de
+// sobreposição com bloqueio (prevenção de overbooking), gravação e auditoria.
 class CreateReservationHandler {
-  constructor({
-    reservationRepository,
-    idempotencyRepository,
-    unitOfWork
-  }) {
-    this.reservationRepository = reservationRepository;
-    this.idempotencyRepository = idempotencyRepository;
-    this.unitOfWork = unitOfWork;
+  constructor({ reservationRepository, guestRepository, idempotencyRepository, auditLog, outbox, unitOfWork, clock }) {
+    this.reservationRepository = assertPort('reservationRepository', reservationRepository, ['hasOverlap', 'create']);
+    this.guestRepository = assertPort('guestRepository', guestRepository, ['findById']);
+    this.idempotencyRepository = assertPort('idempotencyRepository', idempotencyRepository);
+    this.auditLog = assertPort('auditLog', auditLog);
+    this.outbox = assertPort('outbox', outbox);
+    this.unitOfWork = assertPort('unitOfWork', unitOfWork);
+    this.clock = assertPort('clock', clock);
   }
 
-  async execute(command) {
+  async execute({ idempotencyKey, consumer = 'reservations-api', changedBy, correlationId, ...props }) {
+    if (!idempotencyKey) {
+      throw new ValidationError('Idempotency-Key é obrigatória.');
+    }
+
     return this.unitOfWork.transaction(async transaction => {
-      const consumer = command.consumer || 'reservations-api';
-
-      if (!command.idempotencyKey) {
-        throw new MissingIdempotencyKeyError();
-      }
-
       // Verifica se essa requisição já foi processada.
-      const previous = await this.idempotencyRepository.find(
-        consumer,
-        command.idempotencyKey,
-        transaction
-      );
+      const previous = await this.idempotencyRepository.find(consumer, idempotencyKey, transaction);
+      if (previous) return previous.response;
 
-      if (previous) {
-        return previous.response;
+      const now = this.clock.now();
+      const reservation = Reservation.create(props, { code: generateCode(), now });
+
+      if (!(await this.guestRepository.findById(reservation.guestId, transaction))) {
+        throw new ValidationError('guestId não corresponde a um hóspede cadastrado.');
+      }
+      if (await this.reservationRepository.hasOverlap(reservation, transaction)) {
+        throw new ConflictError('Quarto indisponível nesse período.');
       }
 
-      // Valida as datas.
-      new DateRange(command.checkInDate, command.checkOutDate);
-
-      // Valida o valor recebido.
-      if (
-        command.totalAmount === undefined ||
-        command.totalAmount === null ||
-        !Number.isFinite(Number(command.totalAmount)) ||
-        Number(command.totalAmount) < 0
-      ) {
-        throw new InvalidTotalAmountError();
-      }
-
-      // Gera um código para a reserva.
-      const code = `RSV-${crypto.randomBytes(5)
-        .toString('hex')
-        .toUpperCase()}`;
-
-      // Cria a reserva no Azure SQL.
-      const created = await this.reservationRepository.createConfirmed(
-        {
-          ...command,
-          totalAmount: Number(command.totalAmount),
-          code
-        },
-        transaction
-      );
-
-      const response = {
+      const created = await this.reservationRepository.create(reservation, transaction);
+      await this.auditLog.record({
         reservationId: created.id,
-        code: created.code,
-        guestId: command.guestId,
-        hotelId: command.hotelId,
-        roomId: command.roomId,
-        checkInDate: command.checkInDate,
-        checkOutDate: command.checkOutDate,
-        totalAmount: Number(command.totalAmount),
-        status: created.status
-      };
+        previousStatus: null,
+        newStatus: created.status,
+        changedBy: changedBy || consumer,
+        reason: 'Reserva criada'
+      }, transaction);
+
+      // Evento na Outbox, na mesma transação (publicado depois pelo OutboxRelay).
+      await this.outbox.add(reservationEvent('ReservationCreated', created, { correlationId, now }), transaction);
 
       // Salva a resposta para evitar duplicidade.
-      await this.idempotencyRepository.save(
-        consumer,
-        command.idempotencyKey,
-        {
-          statusCode: 201,
-          response
-        },
-        transaction
-      );
-
-      return response;
+      await this.idempotencyRepository.save(consumer, idempotencyKey, created, transaction);
+      return created;
     });
   }
 }
 
-module.exports = {
-  CreateReservationHandler
-};
+module.exports = { CreateReservationHandler };
