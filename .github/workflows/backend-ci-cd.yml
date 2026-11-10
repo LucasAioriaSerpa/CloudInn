@@ -74,6 +74,31 @@ jobs:
           openshift_token: ${{ secrets.OPENSHIFT_TOKEN }}
           namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
 
+      - name: Configurar variáveis do serviço
+        if: matrix.service == 'reservations-service'
+        env:
+          DB_SERVER: ${{ secrets.DB_SERVER }}
+          DB_DATABASE: ${{ secrets.DB_DATABASE }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          oc create configmap reservations-service-config \
+            --from-literal=DB_SERVER="$DB_SERVER" \
+            --from-literal=DB_DATABASE="$DB_DATABASE" \
+            --from-literal=DB_PORT="$DB_PORT" \
+            --dry-run=client -o yaml | oc apply -f -
+
+          oc create secret generic reservations-service-secret \
+            --from-literal=AZURE_TENANT_ID="$AZURE_TENANT_ID" \
+            --from-literal=AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+            --from-literal=AZURE_CLIENT_SECRET="$AZURE_CLIENT_SECRET" \
+            --dry-run=client -o yaml | oc apply -f -
+
+          oc set env deployment/reservations-service --from=configmap/reservations-service-config
+          oc set env deployment/reservations-service --from=secret/reservations-service-secret
+
       - name: Atualizar o Deployment
         run: |
           oc set image deployment/${{ matrix.service }} \
