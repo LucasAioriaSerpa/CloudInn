@@ -1,0 +1,157 @@
+asyncapi: 2.6.0
+info:
+  title: CloudInn — Eventos de domínio
+  version: 1.0.0
+  description: |
+    Eventos trocados entre os serviços do CloudInn pelo Azure Service Bus.
+
+    - **Tópico:** `cloudinn.domain.events`. Cada consumidor tem sua assinatura.
+    - **Envelope:** CloudEvents 1.0 em JSON (`application/cloudevents+json`). O atributo de extensão
+      `correlationid` carrega o `x-correlation-id` da requisição HTTP que originou o evento.
+    - **Mensagem do Service Bus:** `messageId` = id do evento; `correlationId` = correlationid;
+      `subject` e a propriedade `type` = tipo do evento.
+    - **Entrega:** pelo menos uma vez. Os consumidores são idempotentes pelo id do evento.
+    - **Reservas Service** grava os eventos na tabela `OutboxMessages` na mesma transação da reserva;
+      um publicador em segundo plano os envia (até 10 tentativas; depois, status `FAILED`).
+    - **Hotel Service** publica depois de gravar no MongoDB (sem Outbox); falhas de envio ficam no log.
+    - Envelope inválido vai direto para a dead-letter; erro inesperado é reentregue até o
+      MaxDeliveryCount da assinatura e então vai para a dead-letter.
+
+servers:
+  azure-service-bus:
+    url: "{namespace}.servicebus.windows.net"
+    protocol: amqps
+    description: Namespace do Azure Service Bus (tier Standard ou superior, necessário para tópicos).
+    variables:
+      namespace:
+        description: Nome do namespace criado pelo grupo.
+
+defaultContentType: application/cloudevents+json
+
+channels:
+  cloudinn.domain.events:
+    description: Tópico único de eventos de domínio.
+    publish:
+      operationId: publishDomainEvent
+      summary: Publicadores — Reservas Service (via Outbox) e Hotel Service.
+      message:
+        oneOf:
+          - $ref: "#/components/messages/ReservationCreated"
+          - $ref: "#/components/messages/CheckInCompleted"
+          - $ref: "#/components/messages/CheckOutCompleted"
+          - $ref: "#/components/messages/ReservationCancelled"
+          - $ref: "#/components/messages/RoomCleaningCompleted"
+    subscribe:
+      operationId: consumeDomainEvent
+      summary: Consumidores — uma assinatura por serviço.
+      description: |
+        | Assinatura | Consumidor | Efeito |
+        |---|---|---|
+        | `sub-hotel-service` | Hotel Service | ReservationCreated → quarto `reserved` (só se a estadia começa hoje); CheckInCompleted → `occupied`; CheckOutCompleted → `dirty`; ReservationCancelled → `available` (se reservado para a reserva) |
+        | `sub-reservations-service` | Reservas Service | RoomCleaningCompleted → registro de liberação no log |
+        | `sub-analytics-worker` | Azure Function `projectEvents` | Todos → linha de log com tipo, id e correlationId |
+      message:
+        oneOf:
+          - $ref: "#/components/messages/ReservationCreated"
+          - $ref: "#/components/messages/CheckInCompleted"
+          - $ref: "#/components/messages/CheckOutCompleted"
+          - $ref: "#/components/messages/ReservationCancelled"
+          - $ref: "#/components/messages/RoomCleaningCompleted"
+
+components:
+  messages:
+    ReservationCreated:
+      name: ReservationCreated
+      title: Reserva confirmada
+      summary: Publicado pelo Reservas Service ao criar uma reserva (status confirmed).
+      payload:
+        allOf:
+          - $ref: "#/components/schemas/CloudEvent"
+          - type: object
+            properties:
+              type: { const: ReservationCreated }
+              source: { const: /cloudinn/reservations-service }
+              data: { $ref: "#/components/schemas/ReservationData" }
+    CheckInCompleted:
+      name: CheckInCompleted
+      title: Check-in registrado
+      summary: Publicado pelo Reservas Service no check-in (status active).
+      payload:
+        allOf:
+          - $ref: "#/components/schemas/CloudEvent"
+          - type: object
+            properties:
+              type: { const: CheckInCompleted }
+              source: { const: /cloudinn/reservations-service }
+              data: { $ref: "#/components/schemas/ReservationData" }
+    CheckOutCompleted:
+      name: CheckOutCompleted
+      title: Check-out registrado
+      summary: Publicado pelo Reservas Service no check-out (status completed).
+      payload:
+        allOf:
+          - $ref: "#/components/schemas/CloudEvent"
+          - type: object
+            properties:
+              type: { const: CheckOutCompleted }
+              source: { const: /cloudinn/reservations-service }
+              data: { $ref: "#/components/schemas/ReservationData" }
+    ReservationCancelled:
+      name: ReservationCancelled
+      title: Reserva cancelada
+      summary: Publicado pelo Reservas Service ao cancelar (status cancelled), para liberar o quarto reservado.
+      payload:
+        allOf:
+          - $ref: "#/components/schemas/CloudEvent"
+          - type: object
+            properties:
+              type: { const: ReservationCancelled }
+              source: { const: /cloudinn/reservations-service }
+              data: { $ref: "#/components/schemas/ReservationData" }
+    RoomCleaningCompleted:
+      name: RoomCleaningCompleted
+      title: Limpeza concluída
+      summary: Publicado pelo Hotel Service quando o quarto volta a available (RF11).
+      payload:
+        allOf:
+          - $ref: "#/components/schemas/CloudEvent"
+          - type: object
+            properties:
+              type: { const: RoomCleaningCompleted }
+              source: { const: /cloudinn/hotel-service }
+              data:
+                type: object
+                required: [roomId, hotelId, status]
+                properties:
+                  roomId: { type: string, description: ObjectId do quarto }
+                  hotelId: { type: string }
+                  staffId: { type: string, nullable: true }
+                  status: { type: string, const: available }
+
+  schemas:
+    CloudEvent:
+      type: object
+      required: [specversion, id, source, type, time, datacontenttype, data]
+      properties:
+        specversion: { type: string, const: "1.0" }
+        id: { type: string, format: uuid, description: Identificador único (base da idempotência) }
+        source: { type: string, example: /cloudinn/reservations-service }
+        type: { type: string }
+        time: { type: string, format: date-time }
+        subject: { type: string, description: ID do agregado (reserva ou quarto) }
+        datacontenttype: { type: string, const: application/json }
+        correlationid: { type: string, description: x-correlation-id da requisição de origem }
+        data: { type: object }
+    ReservationData:
+      type: object
+      required: [reservationId, hotelId, roomId, guestId, checkInDate, checkOutDate, status]
+      properties:
+        reservationId: { type: string, format: uuid }
+        code: { type: string, example: RSV-1A2B3C4D5E }
+        hotelId: { type: string }
+        roomId: { type: string }
+        guestId: { type: string, format: uuid }
+        checkInDate: { type: string, format: date }
+        checkOutDate: { type: string, format: date }
+        status: { type: string, enum: [confirmed, active, completed, cancelled] }
+        totalAmount: { type: number }

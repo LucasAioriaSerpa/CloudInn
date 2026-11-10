@@ -1,6 +1,17 @@
+const { ValidationError } = require('./errors');
+
+const toTime = value => (value ? new Date(value).getTime() : Number.NaN);
+
 class DateRange {
   constructor(startDate, endDate) {
-    if (!startDate || !endDate || new Date(endDate) <= new Date(startDate)) { throw new Error('Checkout must be after check-in'); }
+    const start = toTime(startDate);
+    const end = toTime(endDate);
+    if (Number.isNaN(start) || Number.isNaN(end)) {
+      throw new ValidationError('Datas de check-in e check-out devem ser válidas.');
+    }
+    if (end <= start) {
+      throw new ValidationError('Checkout must be after check-in');
+    }
     this.startDate = startDate;
     this.endDate = endDate;
   }

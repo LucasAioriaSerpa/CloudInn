@@ -1,25 +1,40 @@
-const http = require('node:http');
-const { GetAggregatedDataQuery } = require('./features/aggregated-data/query');
-const { GetAggregatedDataHandler } = require('./features/aggregated-data/handler');
-const { AggregatedDataAssembler } = require('./features/aggregated-data/assembler');
-const { GatewayClient } = require('./infrastructure/gateway-client');
+const fs = require('node:fs');
+const path = require('node:path');
+const { loadConfig, ConfigError } = require('./config');
+const { createLogger } = require('./infrastructure/logging/logger');
+const { composeBff } = require('./compose');
 
-const transport = {
-  get: async route => ({ route, items: [], guests: [] }),
-  post: async route => ({ route, occupancyRate: 0, projectedRevenue: 0 })
-};
-const handler = new GetAggregatedDataHandler({ gatewayClient: new GatewayClient({ transport }), assembler: new AggregatedDataAssembler() });
+const envFile = path.resolve(process.cwd(), '.env');
+if (fs.existsSync(envFile)) process.loadEnvFile(envFile);
 
-const server = http.createServer(async (request, response) => {
-  if (request.url === '/health') return response.end(JSON.stringify({ status: 'ok', service: 'bff' }));
-  if (request.method === 'GET' && request.url.startsWith('/aggregated-data')) {
-    const url = new URL(request.url, 'http://localhost');
-    const result = await handler.execute(new GetAggregatedDataQuery({ hotelId: url.searchParams.get('hotelId'), date: url.searchParams.get('date') }));
-    response.setHeader('content-type', 'application/json');
-    return response.end(JSON.stringify(result));
-  }
-  response.statusCode = 404;
-  response.end(JSON.stringify({ error: 'Not found' }));
+let config;
+try {
+  config = loadConfig();
+} catch (error) {
+  if (!(error instanceof ConfigError)) throw error;
+  process.stderr.write(`${JSON.stringify({ level: 'error', service: 'bff', message: 'Configuração inválida; o serviço não será iniciado.', missing: error.missing, invalid: error.invalid })}\n`);
+  process.exit(1);
+}
+
+const logger = createLogger({ service: config.service, level: config.logLevel, includeStack: config.nodeEnv !== 'production' });
+const server = composeBff(config, { logger });
+
+server.listen(config.port, '0.0.0.0', () => {
+  logger.info('BFF iniciado', {
+    port: config.port,
+    hotelService: new URL(config.hotelServiceUrl).host,
+    reservationsService: new URL(config.reservationsServiceUrl).host,
+    analyticsFunction: new URL(config.analyticsFunctionUrl).host,
+    corsOrigins: config.corsOrigins,
+    timeoutMs: config.downstreamTimeoutMs
+  });
 });
 
-server.listen(process.env.PORT || 4000);
+function shutdown(signal) {
+  logger.info('Encerrando o BFF', { signal });
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 10000).unref();
+}
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

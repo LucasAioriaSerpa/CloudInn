@@ -45,4 +45,15 @@ function validateCloudEvent(event) {
   return event;
 }
 
-module.exports = { calculate, mask, validateCloudEvent, ValidationError };
+// Linha de log da projeção de eventos. correlationId liga o evento à requisição que o originou (BFF → serviço).
+function describeEvent(event) {
+  return [
+    `evento ${event.type}`,
+    `id=${event.id}`,
+    `subject=${event.subject ?? '-'}`,
+    `source=${event.source}`,
+    `correlationId=${event.correlationid ?? '-'}`
+  ].join(' ');
+}
+
+module.exports = { calculate, mask, validateCloudEvent, describeEvent, ValidationError };

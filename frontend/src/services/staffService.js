@@ -60,7 +60,7 @@ export const staffService = {
    * @returns {Promise<Object>}
    */
   async deleteStaff(staffId) {
-    const res = await apiClient.delete("staff", staffId);
+    const res = await apiClient.deleteRecord("staff", staffId);
     return res;
   },
 };

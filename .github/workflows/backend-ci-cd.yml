@@ -41,6 +41,10 @@ jobs:
         with:
           node-version: 22
 
+      - name: Instalar dependências do serviço
+        working-directory: backend/${{ matrix.service }}
+        run: npm ci
+
       - name: Testes do serviço
         working-directory: backend/${{ matrix.service }}
         run: npm test --if-present
