@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('node:http');
-const { createBffServer } = require('../src/main');
+const { createHttpServer } = require('../src/api/http-server');
 
 test('BFF trata exceção no handler retornando 500 sem derrubar o processo', async (t) => {
   const failingHandler = {
@@ -10,7 +10,15 @@ test('BFF trata exceção no handler retornando 500 sem derrubar o processo', as
     }
   };
 
-  const server = createBffServer(failingHandler);
+  const noop = () => undefined;
+  const server = createHttpServer({
+    handlers: { login: failingHandler, getAggregatedData: { execute: async () => ({ ok: true }) } },
+    tokenService: { verify: () => ({}) },
+    proxy: { request: async () => ({ status: 200, body: {} }) },
+    logger: { debug: noop, info: noop, warn: noop, error: noop },
+    healthDetails: {},
+    dependencyChecks: {}
+  });
 
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
@@ -21,11 +29,16 @@ test('BFF trata exceção no handler retornando 500 sem derrubar o processo', as
   });
 
   const response = await new Promise((resolve, reject) => {
-    http.get(`http://127.0.0.1:${port}/aggregated-data?hotelId=h1&date=2026-11-10`, res => {
+    const request = http.request(`http://127.0.0.1:${port}/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' }
+    }, res => {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
-    }).on('error', reject);
+    });
+    request.on('error', reject);
+    request.end(JSON.stringify({ login: 'qualquer', password: 'qualquer' }));
   });
 
   // Antes: exceção não tratada no http.createServer encerrava o processo ou deixava requisição pendente
@@ -33,7 +46,7 @@ test('BFF trata exceção no handler retornando 500 sem derrubar o processo', as
   assert.equal(response.statusCode, 500);
   const parsed = JSON.parse(response.body);
   assert.equal(parsed.error.code, 'INTERNAL_ERROR');
-  assert.ok(parsed.error.message.includes('catastrófica'));
+  assert.equal(parsed.error.message, 'Erro interno ao processar a requisição.');
 
   // Comprova que o servidor continua vivo atendendo requisições subsequentes
   const healthRes = await new Promise((resolve, reject) => {
