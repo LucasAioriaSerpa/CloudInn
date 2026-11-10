@@ -24,16 +24,10 @@ function buildPoolConfig(config) {
     return config.connectionString;
   }
 
-  return {
+  const poolConfig = {
     server: config.server,
     port: config.port,
     database: config.database,
-
-    authentication: {
-      type: 'azure-active-directory-default',
-      options: {}
-    },
-
     options: {
       encrypt: true,
       trustServerCertificate: false
@@ -47,6 +41,22 @@ function buildPoolConfig(config) {
 
     connectionTimeout: 30000,
     requestTimeout: 30000
+  };
+
+  if (config.mode === 'sql-auth') {
+    return {
+      ...poolConfig,
+      user: config.user,
+      password: config.password
+    };
+  }
+
+  return {
+    ...poolConfig,
+    authentication: {
+      type: 'azure-active-directory-default',
+      options: {}
+    }
   };
 }
 

@@ -26,8 +26,8 @@ function readLogLevel(value, invalid) {
   return level;
 }
 
-// Decisão D9: connection string (login SQL) quando informada; sem ela, login Microsoft Entra
-// com servidor e banco (modo usado até a Fase 1).
+// Decisão D9: connection string quando informada; sem ela, usa login SQL quando
+// DB_USER e DB_PASSWORD estiverem configurados ou Microsoft Entra como fallback.
 function readDatabase(env, missing, invalid) {
   const connectionString = env.AZURE_SQL_CONNECTION_STRING?.trim();
   if (connectionString) return { mode: 'connection-string', connectionString };
@@ -35,6 +35,27 @@ function readDatabase(env, missing, invalid) {
   if (!env.DB_SERVER || !env.DB_DATABASE) {
     missing.push('AZURE_SQL_CONNECTION_STRING (ou DB_SERVER e DB_DATABASE)');
   }
+
+  const user = env.DB_USER?.trim();
+  const password = env.DB_PASSWORD;
+  const hasUser = Boolean(user);
+  const hasPassword = typeof password === 'string' && password.length > 0;
+
+  if (hasUser !== hasPassword) {
+    missing.push(hasUser ? 'DB_PASSWORD' : 'DB_USER');
+  }
+
+  if (hasUser && hasPassword) {
+    return {
+      mode: 'sql-auth',
+      server: env.DB_SERVER,
+      port: readPort(env.DB_PORT, 1433, 'DB_PORT', invalid),
+      database: env.DB_DATABASE,
+      user,
+      password
+    };
+  }
+
   return {
     mode: 'entra',
     server: env.DB_SERVER,
