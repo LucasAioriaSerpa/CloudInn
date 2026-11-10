@@ -1,11 +1,19 @@
-const sql = require('mssql');
+let sql;
+try {
+  sql = require('mssql');
+} catch {
+  sql = null;
+}
 
 let pool;
 
 const required = ['DB_SERVER', 'DB_DATABASE', 'DB_USER', 'DB_PASSWORD'];
-const missing = required.filter(name => !process.env[name]);
-if (missing.length) {
-  throw new Error(`Variáveis de ambiente ausentes: ${missing.join(', ')}`);
+
+function validateConfig() {
+  const missing = required.filter(name => !process.env[name]);
+  if (missing.length) {
+    throw new Error(`Variáveis de ambiente ausentes: ${missing.join(', ')}`);
+  }
 }
 
 const config = {
@@ -36,6 +44,7 @@ async function getConnection() {
     return pool;
   }
 
+  validateConfig();
   pool = await new sql.ConnectionPool(config).connect();
 
   console.log('Conectado ao Azure SQL com sucesso!');

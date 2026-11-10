@@ -1,85 +1,82 @@
-require('dotenv').config();
-
+const express = require('express');
+const cors = require('cors');
 const http = require('node:http');
 
-const { getConnection, closeConnection } =
-  require('./infrastructure/sql/connection');
+const config = require('./config');
+const { correlationMiddleware } = require('./api/middleware/correlation');
+const { loggerMiddleware } = require('./api/middleware/logger');
+const { internalAuthMiddleware } = require('./api/middleware/internal-auth');
+const { errorHandler } = require('./api/middleware/error-handler');
+const { createHealthRouter } = require('./api/routes/health');
+const { createReservationsRouter, safeStringify } = require('./api/routes/reservations');
 
-const { SqlUnitOfWork } =
-  require('./infrastructure/sql/unit-of-work');
+const { getConnection, closeConnection } = require('./infrastructure/sql/connection');
+const { SqlUnitOfWork } = require('./infrastructure/sql/unit-of-work');
+const { SqlReservationRepository } = require('./infrastructure/sql/reservation-repository');
+const { SqlIdempotencyRepository } = require('./infrastructure/sql/idempotency-repository');
+const { CreateReservationHandler } = require('./application/features/reservations/create-reservation/handler');
 
-const { SqlReservationRepository } =
-  require('./infrastructure/sql/reservation-repository');
+function createApp({ handler } = {}) {
+  const app = express();
 
-const { SqlIdempotencyRepository } =
-  require('./infrastructure/sql/idempotency-repository');
+  app.use(cors());
 
-const { CreateReservationHandler } =
-  require('./features/reservations/create-reservation/handler');
-
-const handler = new CreateReservationHandler({
-  reservationRepository: new SqlReservationRepository(),
-  idempotencyRepository: new SqlIdempotencyRepository(),
-  unitOfWork: new SqlUnitOfWork()
-});
-
-const server = http.createServer(async (request, response) => {
-  response.setHeader('Content-Type', 'application/json');
-
-  const path = request.url.split('?')[0];
-
-  if (request.method === 'GET' && path === '/health') {
-    response.statusCode = 200;
-
-    return response.end(JSON.stringify({
-      status: 'ok',
-      service: 'reservations-service'
-    }));
-  }
-
-  if (request.method === 'POST' && path === '/reservations') {
-    let body = '';
-
-    try {
-      for await (const chunk of request) {
-        body += chunk;
+  app.use(express.json({
+    verify: (req, res, buf) => {
+      try {
+        if (buf.length > 0) JSON.parse(buf.toString());
+      } catch {
+        const error = new Error('Payload JSON inválido.');
+        error.statusCode = 400;
+        throw error;
       }
-
-      const command = JSON.parse(body);
-
-      const result = await handler.execute(command);
-
-      response.statusCode = 201;
-      return response.end(JSON.stringify(result));
-
-    } catch (error) {
-      console.error('Erro ao criar reserva:', error);
-
-      response.statusCode = error.statusCode || 500;
-
-      return response.end(JSON.stringify({
-        error: error.statusCode ? error.message : 'Erro interno ao criar reserva.'
-      }));
     }
-  }
-
-  response.statusCode = 404;
-
-  return response.end(JSON.stringify({
-    error: 'Not found'
   }));
-});
+
+  app.use(correlationMiddleware);
+  app.use(loggerMiddleware);
+  app.use(internalAuthMiddleware);
+
+  const defaultHandler = handler || new CreateReservationHandler({
+    reservationRepository: new SqlReservationRepository(),
+    idempotencyRepository: new SqlIdempotencyRepository(),
+    unitOfWork: new SqlUnitOfWork()
+  });
+
+  app.use(createHealthRouter());
+  app.use(createReservationsRouter({ createReservationHandler: defaultHandler }));
+
+  // Fallback 404
+  app.use((req, res) => {
+    res.status(404).json({
+      error: {
+        code: 'NOT_FOUND',
+        message: 'Endpoint não encontrado.',
+        correlationId: req.correlationId || 'none'
+      }
+    });
+  });
+
+  app.use(errorHandler);
+
+  return app;
+}
+
+function createServer(customHandler) {
+  const app = createApp({ handler: customHandler });
+  return http.createServer(app);
+}
+
+const app = createApp();
+const server = http.createServer(app);
 
 async function startServer() {
   try {
     await getConnection();
 
-    const port = process.env.PORT || 5002;
-
-    server.listen(port, '0.0.0.0', () => {
-      console.log(`Reservations Service rodando na porta ${port}`);
+    server.listen(config.port, '0.0.0.0', () => {
+      console.log(`[Reservas Service] Servidor Express rodando na porta ${config.port} (0.0.0.0)`);
     });
-
   } catch (error) {
     console.error('Não foi possível iniciar o serviço:', error);
     process.exit(1);
@@ -88,7 +85,6 @@ async function startServer() {
 
 async function shutdown() {
   console.log('Encerrando Reservations Service...');
-
   server.close(async () => {
     await closeConnection();
     process.exit(0);
@@ -98,4 +94,14 @@ async function shutdown() {
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
-startServer();
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = {
+  app,
+  server,
+  createApp,
+  createServer,
+  safeStringify
+};

@@ -18,7 +18,7 @@ test('ArchiUnitTS: cada service mantém domínio e features sem dependência de 
     const src = path.join(backendRoot, service, 'src');
     for (const file of sourceFiles(src)) {
       const relative = path.relative(src, file).replaceAll(path.sep, '/');
-      if (!relative.startsWith('domain/') && !relative.startsWith('features/')) continue;
+      if (!relative.startsWith('domain/') && !relative.startsWith('features/') && !relative.startsWith('application/')) continue;
       for (const imported of importsOf(file)) {
         assert.ok(!imported.includes('/infrastructure/'), `${service}/${relative} viola Clean Architecture: ${imported}`);
       }
@@ -28,11 +28,17 @@ test('ArchiUnitTS: cada service mantém domínio e features sem dependência de 
 
 test('ArchiUnitTS: casos de uso ficam em fatias verticais e não importam HTTP', () => {
   for (const service of services) {
-    const features = path.join(backendRoot, service, 'src', 'features');
-    for (const file of sourceFiles(features)) {
-      const relative = path.relative(features, file).replaceAll(path.sep, '/');
-      assert.ok(relative.includes('/'), `${service}/${relative} deve estar dentro de uma fatia vertical`);
-      assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /express|http\.createServer|req\.|res\./, `${service}/${relative} mistura transporte com aplicação`);
+    const featureRoots = [
+      path.join(backendRoot, service, 'src', 'features'),
+      path.join(backendRoot, service, 'src', 'application', 'features')
+    ].filter(dir => fs.existsSync(dir));
+
+    for (const features of featureRoots) {
+      for (const file of sourceFiles(features)) {
+        const relative = path.relative(features, file).replaceAll(path.sep, '/');
+        assert.ok(relative.includes('/'), `${service}/${relative} deve estar dentro de uma fatia vertical`);
+        assert.doesNotMatch(fs.readFileSync(file, 'utf8'), /express|http\.createServer|req\.|res\./, `${service}/${relative} mistura transporte com aplicação`);
+      }
     }
   }
 });

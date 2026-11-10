@@ -83,11 +83,11 @@ test('Retorna conflito quando o quarto não está disponível', async () => {
       ...command,
       idempotencyKey: 'teste-002'
     }),
-    error => error.statusCode === 409
+    error => error.message.includes('Quarto indisponível')
   );
 });
 
-test('Não permite valor total negativo', async () => {
+test('Não permite valor total negativo (lança erro de domínio sem statusCode)', async () => {
   const { handler } = createHandler();
 
   await assert.rejects(
@@ -96,6 +96,26 @@ test('Não permite valor total negativo', async () => {
       totalAmount: -100,
       idempotencyKey: 'teste-003'
     }),
-    error => error.statusCode === 400
+    error => {
+      assert.equal(error.name, 'InvalidTotalAmountError');
+      assert.equal(error.statusCode, undefined);
+      return true;
+    }
+  );
+});
+
+test('Rejeita reserva sem chave de idempotência com erro de domínio sem statusCode', async () => {
+  const { handler } = createHandler();
+
+  await assert.rejects(
+    () => handler.execute({
+      ...command,
+      idempotencyKey: null
+    }),
+    error => {
+      assert.equal(error.name, 'MissingIdempotencyKeyError');
+      assert.equal(error.statusCode, undefined);
+      return true;
+    }
   );
 });
