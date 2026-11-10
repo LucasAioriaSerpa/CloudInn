@@ -77,9 +77,9 @@ jobs:
       - name: Configurar variáveis do serviço
         if: matrix.service == 'reservations-service'
         env:
-          DB_SERVER: ${{ secrets.DB_SERVER }}
-          DB_DATABASE: ${{ secrets.DB_DATABASE }}
-          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_SERVER: ${{ vars.DB_SERVER }}
+          DB_DATABASE: ${{ vars.DB_DATABASE }}
+          DB_PORT: ${{ vars.DB_PORT }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         run: |
@@ -90,13 +90,13 @@ jobs:
             --dry-run=client -o yaml | oc apply -f -
 
           oc create secret generic reservations-service-secret \
-            --from-literal=AZURE_TENANT_ID="$AZURE_TENANT_ID" \
-            --from-literal=AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
-            --from-literal=AZURE_CLIENT_SECRET="$AZURE_CLIENT_SECRET" \
+            --from-literal=DB_USER="$DB_USER" \
+            --from-literal=DB_PASSWORD="$DB_PASSWORD" \
             --dry-run=client -o yaml | oc apply -f -
 
-          oc set env deployment/reservations-service --from=configmap/reservations-service-config
-          oc set env deployment/reservations-service --from=secret/reservations-service-secret
+          oc set env deployment/reservations-service \
+            --from=configmap/reservations-service-config \
+            --from=secret/reservations-service-secret
 
       - name: Atualizar o Deployment
         run: |
