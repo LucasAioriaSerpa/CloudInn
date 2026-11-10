@@ -1,0 +1,354 @@
+openapi: 3.0.4
+info:
+  title: CloudInn Reservations and Guests Service API
+  version: 3.0.0
+  description: |
+    Microsserviço proprietário de Hóspedes, Reservas, validação temporal, prevenção de overbooking
+    e idempotência de notificações OTA. Persistência exclusiva no Azure SQL Database.
+servers:
+  - url: https://{gateway}/api/v1
+    description: Rota interna publicada pelo Azure API Management
+    variables:
+      gateway:
+        default: cloudinn-api.azure-api.net
+tags:
+  - name: Guests
+  - name: Reservations
+  - name: OTA
+security:
+  - serviceAuth: []
+paths:
+  /guests:
+    get:
+      tags: [Guests]
+      operationId: listGuests
+      summary: Lista hóspedes
+      responses:
+        '200':
+          description: Hóspedes cadastrados.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Guest'}
+    post:
+      tags: [Guests]
+      operationId: createGuest
+      summary: Cadastra hóspede
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GuestInput'}
+      responses:
+        '201':
+          description: Hóspede criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Guest'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /guests/{guestId}:
+    get:
+      tags: [Guests]
+      operationId: getGuest
+      summary: Consulta hóspede
+      parameters:
+        - $ref: '#/components/parameters/GuestId'
+      responses:
+        '200':
+          description: Hóspede encontrado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Guest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Guests]
+      operationId: updateGuest
+      summary: Atualiza hóspede
+      parameters:
+        - $ref: '#/components/parameters/GuestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GuestInput'}
+      responses:
+        '200':
+          description: Hóspede atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Guest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /reservations:
+    get:
+      tags: [Reservations]
+      operationId: listReservations
+      summary: Lista reservas
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, confirmed, active, completed, cancelled]
+        - name: hotelId
+          in: query
+          schema: {type: string}
+        - name: from
+          in: query
+          schema: {type: string, format: date}
+        - name: to
+          in: query
+          schema: {type: string, format: date}
+      responses:
+        '200':
+          description: Reservas encontradas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Reservation'}
+    post:
+      tags: [Reservations]
+      operationId: createReservation
+      summary: Cria reserva e valida disponibilidade
+      description: |
+        Valida DateRange e conflitos temporais em transação Azure SQL. Reservas concorrentes
+        para o mesmo quarto/período não podem gerar overbooking. Conflito retorna HTTP 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReservationInput'}
+      responses:
+        '201':
+          description: Reserva criada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409':
+          description: Quarto indisponível no intervalo solicitado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+  /reservations/{reservationId}:
+    get:
+      tags: [Reservations]
+      operationId: getReservation
+      summary: Consulta reserva
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Reserva encontrada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Reservations]
+      operationId: updateReservation
+      summary: Atualiza reserva
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReservationInput'}
+      responses:
+        '200':
+          description: Reserva atualizada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+    delete:
+      tags: [Reservations]
+      operationId: cancelReservation
+      summary: Cancela reserva
+      description: A operação de negócio deve registrar a transição para cancelled e manter auditoria.
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Reserva cancelada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /reservations/{reservationId}/checkin:
+    post:
+      tags: [Reservations]
+      operationId: checkIn
+      summary: Efetiva check-in
+      description: |
+        Transiciona a reserva confirmada para active e publica CheckInCompleted via Transactional Outbox.
+        O Hotel Service consome o evento e atualiza o quarto para occupied.
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Check-in efetuado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /reservations/{reservationId}/checkout:
+    post:
+      tags: [Reservations]
+      operationId: checkOut
+      summary: Efetiva check-out
+      description: |
+        Transiciona a reserva active para completed e publica CheckOutCompleted via Transactional Outbox.
+        O Hotel Service consome o evento e atualiza o quarto para dirty.
+      parameters:
+        - $ref: '#/components/parameters/ReservationId'
+      responses:
+        '200':
+          description: Check-out efetuado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /ota/reservations:
+    post:
+      tags: [OTA]
+      operationId: ingestOtaReservation
+      summary: Recebe notificação de reserva de canal parceiro
+      description: Endpoint de integração para Booking, Airbnb, Expedia e demais OTAs. Processamento idempotente.
+      security:
+        - otaApiKey: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Chave única para impedir processamento duplicado da notificação.
+          schema: {type: string, minLength: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/OtaReservationInput'}
+      responses:
+        '201':
+          description: Notificação processada e reserva registrada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '200':
+          description: Notificação repetida; resultado idempotente previamente registrado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Reservation'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409':
+          description: Conflito de disponibilidade.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Error'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+components:
+  securitySchemes:
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Autenticação interna entre BFF/Gateway e microsserviço; aplicar mTLS na infraestrutura.
+    otaApiKey:
+      type: apiKey
+      in: header
+      name: x-api-key
+  parameters:
+    GuestId:
+      name: guestId
+      in: path
+      required: true
+      schema: {type: string}
+    ReservationId:
+      name: reservationId
+      in: path
+      required: true
+      schema: {type: string}
+  responses:
+    BadRequest:
+      description: Requisição inválida.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: Conflito de estado ou duplicidade.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    ValidationError:
+      description: Falha nas regras de validação.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    GuestInput:
+      type: object
+      required: [name, document]
+      properties:
+        name: {type: string}
+        document: {type: string, description: CPF ou passaporte; proteger e mascarar em logs.}
+        email: {type: string, format: email}
+        phone: {type: string}
+        vipStatus: {type: boolean, default: false}
+    Guest:
+      allOf:
+        - {$ref: '#/components/schemas/GuestInput'}
+        - type: object
+          properties:
+            id: {type: string, readOnly: true}
+    ReservationInput:
+      type: object
+      required: [hotelId, guestId, roomIdRef, checkInDate, checkOutDate]
+      properties:
+        hotelId: {type: string}
+        guestId: {type: string}
+        roomIdRef: {type: string, description: Referência lógica do quarto no Hotel Service; não é FK física interbancos.}
+        checkInDate: {type: string, format: date-time}
+        checkOutDate: {type: string, format: date-time}
+        originChannel: {type: string, example: DIRECT}
+        totalAmount: {type: number, format: double, minimum: 0}
+    Reservation:
+      allOf:
+        - {$ref: '#/components/schemas/ReservationInput'}
+        - type: object
+          properties:
+            id: {type: string, readOnly: true}
+            code: {type: string}
+            status:
+              type: string
+              enum: [pending, confirmed, active, completed, cancelled]
+            createdAt: {type: string, format: date-time}
+    OtaReservationInput:
+      allOf:
+        - {$ref: '#/components/schemas/ReservationInput'}
+        - type: object
+          required: [externalReservationId]
+          properties:
+            externalReservationId: {type: string}
+            originChannel:
+              type: string
+              enum: [BOOKING, AIRBNB, EXPEDIA, OTHER]
+    Error:
+      type: object
+      properties:
+        statusCode: {type: integer}
+        code: {type: string}
+        message: {type: string}
+        correlationId: {type: string}

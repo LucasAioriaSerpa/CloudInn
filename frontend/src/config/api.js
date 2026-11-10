@@ -11,8 +11,13 @@
  * utiliza os endpoints do proxy local (/api/httpTrigger*).
  */
 
+const env =
+  (typeof import.meta !== "undefined" && import.meta.env) ||
+  (typeof process !== "undefined" && process.env) ||
+  {};
+
 const getEnvUrl = (envVarName, localFallback) => {
-  const envValue = import.meta.env[envVarName];
+  const envValue = env[envVarName];
   if (envValue && typeof envValue === "string" && envValue.trim() !== "") {
     return envValue.trim();
   }
@@ -27,14 +32,14 @@ export const API_URLS = {
   health: getEnvUrl("VITE_CLOUDINN_HEALTH_URL", "/api/httpTriggerHealth"),
 };
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
-export const API_KEY = import.meta.env.VITE_API_KEY || "";
+export const API_BASE_URL = env.VITE_API_BASE_URL || "";
+export const API_KEY = env.VITE_API_KEY || "";
 
 export const MOCK_RESERVATION_URL =
-  import.meta.env.VITE_MOCK_API_URL ||
+  env.VITE_MOCK_API_URL ||
   "https://mock.apidog.com/m1/1365796-1370036-1444387/reservation";
 
-if (import.meta.env.PROD) {
+if (env.PROD) {
   console.log(
     "[API Config] Azure Static Web App - URLs obtidas das Environment Variables:",
     API_URLS,

@@ -1,0 +1,409 @@
+openapi: 3.0.4
+info:
+  title: CloudInn Hotel Service API
+  version: 3.0.0
+  description: |
+    Microsserviço proprietário dos domínios Hotel, Staff, Quartos, Diárias e Governança.
+    Persistência exclusiva no MongoDB Atlas. Rotas internas acessíveis pelo BFF via Azure API Management.
+servers:
+  - url: https://{gateway}/api/v1
+    description: Rota interna publicada pelo Azure API Management
+    variables:
+      gateway:
+        default: cloudinn-api.azure-api.net
+tags:
+  - name: Hotels
+  - name: Rooms
+  - name: Housekeeping
+  - name: Staff
+  - name: Daily Rates
+security:
+  - serviceAuth: []
+paths:
+  /hotel:
+    post:
+      tags: [Hotels]
+      operationId: createHotel
+      summary: Cadastra um hotel
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HotelInput'}
+      responses:
+        '201':
+          description: Hotel criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Hotel'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /hotel/{hotelId}:
+    get:
+      tags: [Hotels]
+      operationId: getHotel
+      summary: Consulta um hotel
+      parameters:
+        - $ref: '#/components/parameters/HotelId'
+      responses:
+        '200':
+          description: Hotel encontrado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Hotel'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Hotels]
+      operationId: updateHotel
+      summary: Atualiza o cadastro do hotel
+      parameters:
+        - $ref: '#/components/parameters/HotelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/HotelInput'}
+      responses:
+        '200':
+          description: Hotel atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Hotel'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /hotel/rooms:
+    get:
+      tags: [Rooms]
+      operationId: listRooms
+      summary: Lista quartos do hotel
+      parameters:
+        - name: hotelId
+          in: query
+          required: true
+          schema: {type: string}
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [available, reserved, occupied, dirty, cleaning]
+      responses:
+        '200':
+          description: Lista de quartos.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Room'}
+    post:
+      tags: [Rooms]
+      operationId: createRoom
+      summary: Cadastra um quarto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RoomInput'}
+      responses:
+        '201':
+          description: Quarto criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Room'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+  /hotel/rooms/{roomId}:
+    get:
+      tags: [Rooms]
+      operationId: getRoom
+      summary: Consulta um quarto
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      responses:
+        '200':
+          description: Quarto encontrado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Room'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Rooms]
+      operationId: updateRoom
+      summary: Atualiza os dados do quarto
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RoomInput'}
+      responses:
+        '200':
+          description: Quarto atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Room'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    delete:
+      tags: [Rooms]
+      operationId: deleteRoom
+      summary: Remove um quarto
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      responses:
+        '204': {description: Quarto removido.}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /housekeeping/rooms/{roomId}/status:
+    patch:
+      tags: [Housekeeping]
+      operationId: setRoomCleaningStatus
+      summary: Atualiza o status operacional do quarto
+      description: |
+        Usado pela governança para iniciar a limpeza (dirty -> cleaning) e liberar o quarto
+        após higienização e vistoria (cleaning -> available). O check-out é refletido por evento
+        CheckOutCompleted, consumido pelo serviço para marcar o quarto como dirty.
+      parameters:
+        - $ref: '#/components/parameters/RoomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [cleaning, available]
+                updatedBy: {type: string}
+      responses:
+        '200':
+          description: Status atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Room'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /hotel/staff:
+    get:
+      tags: [Staff]
+      operationId: listStaff
+      summary: Lista colaboradores
+      parameters:
+        - name: hotelId
+          in: query
+          required: true
+          schema: {type: string}
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [manager, sub_manager, receptionist, housekeeper]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, on_leave]
+      responses:
+        '200':
+          description: Lista de colaboradores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/Staff'}
+    post:
+      tags: [Staff]
+      operationId: createStaff
+      summary: Cadastra colaborador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StaffInput'}
+      responses:
+        '201':
+          description: Colaborador criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Staff'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+  /hotel/staff/{staffId}:
+    get:
+      tags: [Staff]
+      operationId: getStaff
+      summary: Consulta colaborador
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      responses:
+        '200':
+          description: Colaborador encontrado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Staff'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    put:
+      tags: [Staff]
+      operationId: updateStaff
+      summary: Atualiza colaborador e perfil RBAC
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/StaffInput'}
+      responses:
+        '200':
+          description: Colaborador atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Staff'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    delete:
+      tags: [Staff]
+      operationId: deactivateStaff
+      summary: Desativa colaborador
+      parameters:
+        - $ref: '#/components/parameters/StaffId'
+      responses:
+        '204': {description: Colaborador desativado ou removido.}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /hotel/daily-rates:
+    get:
+      tags: [Daily Rates]
+      operationId: listDailyRates
+      summary: Lista diárias por tipologia
+      parameters:
+        - name: hotelId
+          in: query
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: Diárias cadastradas.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {$ref: '#/components/schemas/DailyRate'}
+    put:
+      tags: [Daily Rates]
+      operationId: upsertDailyRates
+      summary: Cadastra ou atualiza diárias por tipologia
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: {$ref: '#/components/schemas/DailyRate'}
+      responses:
+        '200': {description: Diárias atualizadas.}
+components:
+  securitySchemes:
+    serviceAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Autenticação interna entre BFF/Gateway e microsserviço; aplicar mTLS na infraestrutura.
+  parameters:
+    HotelId:
+      name: hotelId
+      in: path
+      required: true
+      schema: {type: string}
+    RoomId:
+      name: roomId
+      in: path
+      required: true
+      schema: {type: string}
+    StaffId:
+      name: staffId
+      in: path
+      required: true
+      schema: {type: string}
+  responses:
+    BadRequest:
+      description: Requisição inválida.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    NotFound:
+      description: Recurso não encontrado.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+    Conflict:
+      description: Conflito de estado ou duplicidade.
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/Error'}
+  schemas:
+    HotelInput:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string}
+        address: {type: string}
+        timezone: {type: string}
+    Hotel:
+      allOf:
+        - {$ref: '#/components/schemas/HotelInput'}
+        - type: object
+          properties:
+            id: {type: string, readOnly: true}
+    RoomInput:
+      type: object
+      required: [hotelId, number, roomType, status]
+      properties:
+        hotelId: {type: string}
+        number: {type: string}
+        roomType: {type: string, example: STD}
+        floor: {type: integer}
+        status:
+          type: string
+          enum: [available, reserved, occupied, dirty, cleaning]
+        amenities:
+          type: array
+          items: {type: string}
+    Room:
+      allOf:
+        - {$ref: '#/components/schemas/RoomInput'}
+        - type: object
+          properties:
+            id: {type: string, readOnly: true}
+    StaffInput:
+      type: object
+      required: [hotelId, name, role]
+      properties:
+        hotelId: {type: string}
+        name: {type: string}
+        role:
+          type: string
+          enum: [manager, sub_manager, receptionist, housekeeper]
+        department: {type: string}
+        shift: {type: string}
+        status:
+          type: string
+          enum: [active, inactive, on_leave]
+    Staff:
+      allOf:
+        - {$ref: '#/components/schemas/StaffInput'}
+        - type: object
+          properties:
+            id: {type: string, readOnly: true}
+    DailyRate:
+      type: object
+      required: [hotelId, roomType, pricePerNight]
+      properties:
+        hotelId: {type: string}
+        roomType: {type: string}
+        pricePerNight: {type: number, format: double, minimum: 0}
+        validFrom: {type: string, format: date}
+        validTo: {type: string, format: date}
+    Error:
+      type: object
+      properties:
+        statusCode: {type: integer}
+        code: {type: string}
+        message: {type: string}
